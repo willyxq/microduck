@@ -69,6 +69,18 @@
     .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     .rules p { color: #ced0d2; line-height: 1.65; }
     .video-link { color: var(--duck); }
+    .interaction-guide {
+      max-width: 1160px; margin: 34px auto 0; display: grid;
+      grid-template-columns: repeat(3, 1fr); gap: 18px;
+    }
+    .interaction-guide article {
+      background: white; border: 1px solid white; border-radius: 24px; padding: 23px;
+      box-shadow: 0 8px 25px rgba(0,0,0,.04);
+    }
+    .interaction-guide h2 { grid-column: 1/-1; margin: 10px 0 0; font-size: 28px; }
+    .interaction-guide h3 { margin: 0 0 14px; }
+    .interaction-guide ul { margin: 0; padding-left: 19px; color: var(--muted); line-height: 1.65; }
+    .interaction-guide li + li { margin-top: 8px; }
 
     /* Exact 430 × 932 render surface used to create the downloadable shots. */
     .render-page { background: var(--paper); width: 430px; height: 932px; overflow: hidden; }
@@ -189,6 +201,42 @@
     .quick { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; }
     .quick div { text-align: center; padding: 9px 2px; background: #fff; border: 1px solid var(--line); border-radius: 13px; font-size: 11px; }
     .quick b { display: block; font-size: 22px; margin-bottom: 4px; }
+    .camera-card {
+      height: 220px; position: relative; overflow: hidden; padding: 0;
+      background:
+        linear-gradient(180deg, #91c3d1 0 57%, #c9b998 58% 100%);
+    }
+    .camera-card::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 78px; height: 52px;
+      background: linear-gradient(14deg, transparent 0 14%, #708b63 15% 40%, transparent 41%),
+        linear-gradient(-10deg, transparent 0 58%, #617f59 59% 79%, transparent 80%);
+      opacity: .7;
+    }
+    .camera-duck {
+      position: absolute; left: 160px; bottom: 23px; font-size: 78px;
+      filter: drop-shadow(0 8px 8px rgba(0,0,0,.22));
+    }
+    .camera-overlay {
+      position: absolute; left: 12px; right: 12px; top: 11px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .camera-tools { display: flex; gap: 8px; }
+    .camera-tool {
+      width: 36px; height: 36px; border: 0; border-radius: 12px;
+      color: white; background: rgba(24,29,30,.62); font-size: 17px;
+    }
+    .live {
+      border-radius: 999px; background: rgba(24,29,30,.65); color: white;
+      padding: 7px 10px; font-size: 12px; font-weight: 750;
+    }
+    .activity { display: flex; align-items: center; gap: 12px; }
+    .activity i {
+      width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center;
+      background: var(--teal-soft); color: var(--teal); font-style: normal;
+    }
+    .activity div { flex: 1; }
+    .activity b { display: block; }
+    .activity small { color: var(--muted); }
     .model-card .model-head { display: flex; align-items: center; gap: 10px; }
     .model-icon { width: 47px; height: 47px; display: grid; place-items: center; background: #fff2c8; border-radius: 13px; font-size: 27px; }
     .model-title { flex: 1; }
@@ -235,6 +283,7 @@
     @media (max-width: 900px) {
       .gallery { grid-template-columns: repeat(2,1fr); }
       .decision { grid-template-columns: repeat(2,1fr); }
+      .interaction-guide { grid-template-columns: 1fr; }
     }
     @media (max-width: 590px) {
       .site { padding: 34px 16px 60px; }
@@ -309,59 +358,59 @@
       `, null, true);
 
       if (id === "home") return phone(`
-        ${appTopbar("晚上好，Coincoin",'<span class="pill">ᛒ 现场直连</span>')}
+        ${appTopbar("Coincoin⌄",'<span class="pill">ᛒ 现场直连　›</span>')}
         <section class="card hero-card">
           <div class="online">● 在线 · 已停止</div>
           <h2>MicroDuck</h2><span class="subtitle">开源双足机器人</span>
           <div class="stats"><div class="stat"><b>78%</b>电池</div><div class="stat"><b>Wi-Fi</b>Studio_2.4G</div></div>
           <div class="robot">🐥</div>
         </section>
-        <section class="grid4">
-          <div class="action"><i>🎮</i>遥控</div><div class="action"><i>✨</i>动作</div>
-          <div class="action"><i>▦</i>模型</div><div class="action"><i>♡</i>健康</div>
-        </section>
-        <section class="card update-banner" style="margin-top:13px">
+        <section class="card update-banner">
           <span style="font-size:28px">⇧</span><div class="grow"><b>行走模型有新版本 1.3.0</b><small>已签名 · 6.2 MB</small></div>
           <button class="btn">查看更新</button>
+        </section>
+        <section class="card">
+          <h3 class="section-title">最近状态</h3>
+          <div class="activity"><i>✓</i><div><b>设备安全停稳</b><small>控制循环 50.0 Hz · 刚刚</small></div></div>
         </section>
         <p class="security-note">设备是主体 · 无厂商云账号</p>
       `, "home");
 
       if (id === "control") return phone(`
-        ${appTopbar("控制 Coincoin",'<span>⚙</span>')}
-        <div class="pill good">◔ 局域网低延迟 · 安全</div>
-        <section class="card pose" style="margin-top:12px">
-          <b>实时姿态</b><div class="robot">🐥</div>
-          <div class="mode" style="position:absolute;left:16px;right:16px;bottom:12px"><span class="active">双足</span><span>滚轮</span></div>
+        ${appTopbar("控制 Coincoin",'<span>•••</span>')}
+        <div class="pill good">◔ 局域网低延迟 · 安全　›</div>
+        <section class="card camera-card" style="margin-top:12px">
+          <div class="camera-overlay"><span class="live">● 摄像头实时画面</span><div class="camera-tools"><button class="camera-tool">🔇</button><button class="camera-tool">⛶</button></div></div>
+          <div class="camera-duck">🐥</div>
         </section>
         <section class="joysticks">
           <div><div class="joystick-label">移动</div><div class="joystick"><div class="stick">＋</div></div></div>
-          <div><div class="joystick-label">视线</div><div class="joystick teal"><div class="stick">◉</div></div></div>
+          <div><div class="joystick-label">头部 / 摄像头</div><div class="joystick teal"><div class="stick">◉</div></div></div>
         </section>
         <button class="stop">● 停止</button>
         <section class="quick">
-          <div><b>🦆</b>坐下</div><div><b>↥</b>站起</div><div><b>⚽</b>踢球</div><div><b>✋</b>捡起</div><div><b>🔊</b>叫一声</div>
+          <div><b>🦆</b>坐下</div><div><b>✋</b>捡起</div><div><b>↙</b>左踢</div><div><b>↘</b>右踢</div><div><b>🔊</b>叫一声</div>
         </section>
         <p class="security-note" style="margin-top:10px">🛡 松手即停，设备安全层拥有最终控制权<br>蓝牙仅用于配网和更新</p>
       `, "control");
 
       if (id === "models") return phone(`
-        ${appTopbar("模型",'<span class="pill good">ᛒ　◔</span>')}
-        <p class="subtitle">模型由设备直接从公开仓库下载</p>
+        ${appTopbar("模型",'<button class="camera-tool" style="color:var(--ink);background:white;border:1px solid var(--line)">↻</button>')}
+        <p class="subtitle"><span class="online">● 鸭子已联网</span> · 设备直接从公开仓库下载</p>
         <section class="card model-card">
-          <div class="model-head"><div class="model-icon">🦆</div><div class="model-title"><b>行走 Walk</b><small>当前 v1.2.0</small></div><span class="pill">有更新</span></div>
+          <div class="model-head"><div class="model-icon">🦆</div><div class="model-title"><b>行走 Walk</b><small>当前 v1.2.0</small></div><span class="pill">有更新</span><span>›</span></div>
           <div class="model-meta">更新 v1.3.0　·　6.2 MB<br>来源 Hugging Face　·　签名已验证</div>
           <div class="model-actions"><span class="compat">61→14 · API 1</span><button class="btn">更新</button></div>
         </section>
         <section class="card model-card">
-          <div class="model-head"><div class="model-icon">🧍</div><div class="model-title"><b>站立 Stand</b><small>当前 v1.1.4</small></div><span class="pill good">✓ 已是最新</span></div>
+          <div class="model-head"><div class="model-icon">🧍</div><div class="model-title"><b>站立 Stand</b><small>当前 v1.1.4</small></div><span class="pill good">✓ 已是最新</span><span>›</span></div>
           <div class="model-actions" style="margin-top:13px"><span class="compat">61→14 · API 1</span></div>
         </section>
         <section class="card model-card">
-          <div class="model-head"><div class="model-icon">✋</div><div class="model-title"><b>捡起 Ground Pick</b><small>当前 v0.9.2</small></div></div>
+          <div class="model-head"><div class="model-icon">✋</div><div class="model-title"><b>捡起 Ground Pick</b><small>当前 v0.9.2</small></div><span>›</span></div>
           <div class="model-actions" style="margin-top:13px"><span class="compat">61→14 · API 1</span></div>
         </section>
-        <section class="card flow-card"><b style="color:var(--ink)">工作方式</b><br><br>手机下令　→　鸭子下载　→　验签生效</section>
+        <p class="security-note">下拉或点右上角可检查更新 · 不自动安装</p>
       `, "models");
 
       if (id === "updating") return phone(`
@@ -452,6 +501,29 @@
             <p><b>任务流：</b>添加设备与 Wi-Fi 配网在进入 App 前完成；更新进度与结果为全屏流程。返回后仍落在“模型”，不会跳到新的“能力”“数据”或“设备”标签。</p>
           </div>
           <a class="video-link" href="assets/microduck-final-demo.mp4" download>下载完整演示视频（MP4）</a>
+        </section>
+        <section class="interaction-guide">
+          <h2>点击行为已经收敛</h2>
+          <article><h3>首页</h3><ul>
+            <li><b>Coincoin⌄：</b>打开设备选择器。</li>
+            <li><b>现场直连：</b>查看 BLE、Wi-Fi 与局域网连接详情。</li>
+            <li><b>设备卡、最近状态：</b>只读，不伪装成按钮。</li>
+            <li><b>查看更新：</b>进入行走模型详情，不直接安装。</li>
+          </ul></article>
+          <article><h3>控制</h3><ul>
+            <li><b>视频：</b>默认实时显示；静音和全屏为独立按钮。</li>
+            <li><b>移动：</b>持续发送速度，松手回中并立即停。</li>
+            <li><b>头部/摄像头：</b>控制头部朝向，摄像头随之转动。</li>
+            <li><b>停止：</b>清零移动速度，不断电、不让关节失力。</li>
+            <li><b>快捷动作：</b>“坐下”随当前姿态切换为“站起”；左右踢明确分开。服务端接受后锁定冲突动作。</li>
+          </ul></article>
+          <article><h3>模型</h3><ul>
+            <li><b>刷新：</b>检查全部固定槽，不自动安装。</li>
+            <li><b>模型行：</b>进入版本、来源、兼容性和历史详情。</li>
+            <li><b>更新：</b>先打开确认页和安全检查，再开始下载。</li>
+            <li><b>已是最新：</b>状态标签，不可点击。</li>
+            <li><b>底部模型标签：</b>回到槽位列表并保留滚动位置。</li>
+          </ul></article>
         </section>
       </div>`;
     }
