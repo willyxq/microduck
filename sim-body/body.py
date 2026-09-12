@@ -79,28 +79,24 @@ def compile_model():
     spec.worldbody.add_light(name="sun", pos=[0.5, -0.4, 1.4], dir=[-0.3, 0.25, -1], diffuse=[0.85, 0.82, 0.75])
     spec.worldbody.add_light(name="fill", pos=[-0.3, 0.4, 1.0], dir=[0.2, -0.2, -1], diffuse=[0.35, 0.38, 0.42])
     # 3/4 studio cam: close enough that sit/stand is obvious in a 480×320 JPEG.
-    spec.worldbody.add_camera(name="app_cam", pos=[0.16, -0.14, 0.11], xyaxes=[0.66, 0.75, 0, -0.22, 0.19, 0.96])
+    spec.worldbody.add_camera(name="app_cam", pos=[0.13, -0.11, 0.09], xyaxes=[0.65, 0.76, 0, -0.24, 0.20, 0.95])
     duck = [0.95, 0.71, 0.17, 1]
     beak = [0.95, 0.45, 0.12, 1]
     left = [0.22, 0.52, 0.92, 1]
     right = [0.18, 0.72, 0.42, 1]
+    # Only decorate the silhouette bodies. Intermediate hinge frames are rotated;
+    # capsules there look like a molecule, not a duck.
     for body in spec.bodies:
         name = body.name or ""
-        if not name:
-            continue
         if name == "trunk_base":
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_ELLIPSOID, size=[0.055, 0.042, 0.036], pos=[-0.01, 0, 0.008], rgba=duck)
+            _vis(body, type=mujoco.mjtGeom.mjGEOM_ELLIPSOID, size=[0.058, 0.044, 0.038], pos=[-0.012, 0, 0.01], rgba=duck)
         elif name == "bottom_head_shell":
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.036, 0, 0], pos=[0.002, 0, -0.038], rgba=duck)
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_ELLIPSOID, size=[0.024, 0.012, 0.009], pos=[0.014, 0, -0.074], rgba=beak)
-        elif "neck" in name:
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_CAPSULE, size=[0.012, 0.018, 0], rgba=duck)
-        elif name.startswith("left_") or name in ("yaw2roll", "hip_l", "leg", "ankle_left"):
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_CAPSULE, size=[0.011, 0.016, 0], rgba=left)
-        elif name.startswith("right_") or name in ("bearing_roll", "hip_l_2", "leg_2", "ankle_right"):
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_CAPSULE, size=[0.011, 0.016, 0], rgba=right)
-        elif not body.geoms:
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.012, 0, 0], rgba=duck)
+            _vis(body, type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.034, 0, 0], pos=[0.0, 0.0, -0.04], rgba=duck)
+            _vis(body, type=mujoco.mjtGeom.mjGEOM_ELLIPSOID, size=[0.022, 0.011, 0.008], pos=[0.012, 0, -0.072], rgba=beak)
+        elif name == "ankle_left":
+            _vis(body, type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.015, 0, 0], pos=[0, -0.02, -0.012], rgba=left)
+        elif name == "ankle_right":
+            _vis(body, type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.015, 0, 0], pos=[0, 0.02, -0.012], rgba=right)
     return spec.compile()
 
 
@@ -396,7 +392,8 @@ def remote_io_client(conn: socket.socket):
 def maybe_viewer(stop: threading.Event):
     try:
         import mujoco.viewer
-    except Exception:
+    except Exception as exc:
+        print(f"viewer unavailable: {exc}", flush=True)
         return
     with mujoco.viewer.launch_passive(BODY.model, BODY.data) as viewer:
         while viewer.is_running() and not stop.is_set():
@@ -405,25 +402,31 @@ def maybe_viewer(stop: threading.Event):
             time.sleep(0.02)
 
 
-async def main_async(args):
+def serve_lan(args, stop: threading.Event):
+    async def run():
+        import websockets
+
+        async with websockets.serve(lan_handler, "127.0.0.1", args.lan_port):
+            while not stop.is_set():
+                await asyncio.sleep(0.2)
+
+    asyncio.run(run())
+
+
+def start_runtime(args):
     stop = threading.Event()
-    threading.Thread(target=physics_loop, args=(stop,), daemon=True).start()
-    threading.Thread(target=render_loop, args=(stop,), daemon=True).start()
+    threading.Thread(target=physics_loop, args=(stop,), daemon=True, name="physics").start()
+    threading.Thread(target=render_loop, args=(stop,), daemon=True, name="render").start()
     start_http(args.camera_port)
     start_remote_io(args.body_port, stop)
-    if args.viewer:
-        threading.Thread(target=maybe_viewer, args=(stop,), daemon=True).start()
-
-    import websockets
-
+    threading.Thread(target=serve_lan, args=(args, stop), daemon=True, name="lan").start()
     print(
         f"body-sim lan ws://127.0.0.1:{args.lan_port}  "
         f"camera http://127.0.0.1:{args.camera_port}/camera.mjpeg  "
         f"remote-io 127.0.0.1:{args.body_port}",
         flush=True,
     )
-    async with websockets.serve(lan_handler, "127.0.0.1", args.lan_port):
-        await asyncio.Future()
+    return stop
 
 
 def main():
@@ -436,7 +439,14 @@ def main():
     args = p.parse_args()
     if args.headless:
         args.viewer = False
-    asyncio.run(main_async(args))
+    stop = start_runtime(args)
+    if args.viewer:
+        try:
+            maybe_viewer(stop)
+        except Exception as exc:
+            print(f"viewer failed, camera/LAN keep running: {exc}", flush=True)
+    while not stop.is_set():
+        time.sleep(0.5)
 
 
 if __name__ == "__main__":

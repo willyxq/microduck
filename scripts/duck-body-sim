@@ -74,6 +74,10 @@ up() {
         tail -n 40 "$STATE/body.log" >&2 || true
         die "body camera did not come up (see $STATE/body.log)"
     }
+    if ! kill -0 "$(cat "$STATE/body.pid")" 2>/dev/null; then
+        tail -n 40 "$STATE/body.log" >&2 || true
+        die "body process exited (see $STATE/body.log)"
+    fi
     status
     say "App LAN: MICRODUCK_LAN_URL=ws://$LAN"
     say "camera: http://$CAM/camera.mjpeg"
