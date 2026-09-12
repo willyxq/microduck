@@ -1,0 +1,240 @@
+{
+  "rows": [
+    {
+      "id": "walk",
+      "title": "行走",
+      "kind": "locomotion",
+      "body": "walk",
+      "builtin": true,
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "velstand",
+      "title": "走 + 爬起",
+      "kind": "locomotion",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "run",
+      "title": "奔跑",
+      "kind": "locomotion",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "sprint",
+      "title": "冲刺",
+      "kind": "locomotion",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "moonwalk",
+      "title": "太空步",
+      "kind": "locomotion",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "hop",
+      "title": "跳步",
+      "kind": "locomotion",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "sitstand",
+      "title": "坐下 / 站起",
+      "kind": "pose",
+      "body": "walk",
+      "builtin": true,
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "standup",
+      "title": "从地上爬起",
+      "kind": "trick",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "pick",
+      "title": "低头捡",
+      "kind": "trick",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "kick_left",
+      "title": "左脚踢",
+      "kind": "trick",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "kick_right",
+      "title": "右脚踢",
+      "kind": "trick",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "roulade",
+      "title": "前滚翻",
+      "kind": "trick",
+      "body": "walk",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "roller",
+      "title": "轮滑走",
+      "kind": "locomotion",
+      "body": "rollers",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "swizzle",
+      "title": "摆滑",
+      "kind": "locomotion",
+      "body": "rollers",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "spin",
+      "title": "原地转",
+      "kind": "trick",
+      "body": "rollers",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "roller_crouch",
+      "title": "轮滑下蹲",
+      "kind": "pose",
+      "body": "rollers",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "roller_slope",
+      "title": "下坡滑",
+      "kind": "locomotion",
+      "body": "rollers",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    },
+    {
+      "id": "roller_standup",
+      "title": "轮上爬起",
+      "kind": "trick",
+      "body": "rollers",
+      "installOk": true,
+      "appear": true,
+      "uninstallOk": true,
+      "gone": true,
+      "ok": true
+    }
+  ],
+  "bodies": {
+    "walk": "body=walk loco=walk",
+    "roller": "body=rollers loco=roller"
+  },
+  "walkHealth": {
+    "ok": true,
+    "bridge": "microduck-body",
+    "sitting": false,
+    "camera": true,
+    "viewer": true,
+    "gait": "onnx",
+    "policy": "standing",
+    "x": 0.019426411340061997,
+    "y": -0.006182367343347608,
+    "z": 0.1162585730410485,
+    "hip_pitch": -0.43626846507092515,
+    "ticks": 62621,
+    "locomotion": "walk",
+    "body": "walk"
+  },
+  "rollerHealth": {
+    "ok": true,
+    "bridge": "microduck-body",
+    "sitting": false,
+    "camera": true,
+    "viewer": true,
+    "gait": "onnx",
+    "policy": "walking",
+    "x": 0.01158414807347359,
+    "y": -0.0009603723844390107,
+    "z": 0.12051210664256769,
+    "hip_pitch": 0.168515920874301,
+    "ticks": 62758,
+    "locomotion": "roller",
+    "body": "rollers"
+  }
+}

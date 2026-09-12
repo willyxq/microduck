@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>能力实验室 · 下载 / 卸载 / 机体</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--paper:#efe6d4;--ink:#1c1914;--mute:#6a6458;--duck:#e8a31a;--ok:#1f7a4d;--bad:#b42318;--card:#fffaf0}
+*{box-sizing:border-box}
+body{margin:0;background:
+  radial-gradient(circle at 8% -10%,rgba(232,163,26,.22),transparent 28rem),
+  repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(28,25,20,.04) 28px),
+  var(--paper);color:var(--ink);font:17px/1.5 "Source Sans 3",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 80px}
+h1{font-family:Fraunces,serif;font-size:52px;line-height:.95;margin:0 0 12px}
+.lede{font-size:20px;color:var(--mute);max-width:36rem}
+.stamp{display:inline-block;margin:18px 0 36px;padding:6px 12px;border:1px solid var(--ink);font:12px/1 "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase}
+section{margin:48px 0}
+h2{font-family:Fraunces,serif;font-size:28px;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+figure{margin:0;background:var(--card);padding:10px;box-shadow:0 12px 30px rgba(60,40,10,.08)}
+figure img{width:100%;display:block;border-radius:8px}
+figcaption{font:12px/1.4 "IBM Plex Mono",monospace;color:var(--mute);padding:8px 4px 2px}
+table{width:100%;border-collapse:collapse;background:var(--card);font-size:14px}
+th,td{padding:10px 8px;border-bottom:1px solid #eadfcb;text-align:left}
+th{font:12px "IBM Plex Mono",monospace;color:var(--mute)}
+tr.ok td:last-child{color:var(--ok);font-weight:700}
+tr.bad td:last-child{color:var(--bad);font-weight:700}
+.mono{font-family:"IBM Plex Mono",monospace;font-size:12px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.note{background:#1c1914;color:#efe6d4;padding:18px 20px;font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="stamp">Body-sim · 2026-09-12 · LAN :17434</p>
+  <h1>下载，卸载，<br/>换一双脚。</h1>
+  <p class="lede">模型页点下载 / 卸载。互动页只出现已启用的能力。点行走用 Cream 脚；点轮滑走换成四只被动轮。下面是刚跑完的实机记录。</p>
+
+  <section>
+    <h2>1. 机体必须对上</h2>
+    <p>点「行走」时 health.body = walk。点「轮滑走」时 health.body = rollers。摄像头跟的是同一只鸭子。</p>
+    <div class="pair">
+      <figure><img src="shots/sim-walk.jpg" alt="walk body"/><figcaption>行走 · body=walk loco=walk</figcaption></figure>
+      <figure><img src="shots/sim-roller.jpg" alt="roller body"/><figcaption>轮滑走 · body=rollers loco=roller</figcaption></figure>
+    </div>
+    <div class="grid" style="margin-top:16px">
+      <figure><img src="shots/app-interact-walk.png" alt="interact walk"/><figcaption>互动 · 行走选中</figcaption></figure>
+      <figure><img src="shots/app-interact-roller.png" alt="interact roller"/><figcaption>互动 · 轮滑走选中</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. 模型页：空仓 → 装满 → 再卸</h2>
+    <div class="grid">
+      <figure><img src="shots/app-models-empty.png" alt="models empty"/><figcaption>卸载已下载之后。行走 / 坐下仍是出厂包。</figcaption></figure>
+      <figure><img src="shots/app-models-full.png" alt="models full"/><figcaption>18 个能力全部下载。每张卡可卸载。</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. 每个能力：下载出现，卸载消失</h2>
+    <table>
+      <thead><tr><th>能力</th><th>id</th><th>机体</th><th>下载</th><th>互动</th><th>卸载</th><th>之后</th><th></th></tr></thead>
+      <tbody><tr class="ok">
+      <td>行走</td>
+      <td class="mono">walk</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>出厂仍在</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>走 + 爬起</td>
+      <td class="mono">velstand</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>奔跑</td>
+      <td class="mono">run</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>冲刺</td>
+      <td class="mono">sprint</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>太空步</td>
+      <td class="mono">moonwalk</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>跳步</td>
+      <td class="mono">hop</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>坐下 / 站起</td>
+      <td class="mono">sitstand</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>出厂仍在</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>从地上爬起</td>
+      <td class="mono">standup</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>低头捡</td>
+      <td class="mono">pick</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>左脚踢</td>
+      <td class="mono">kick_left</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>右脚踢</td>
+      <td class="mono">kick_right</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>前滚翻</td>
+      <td class="mono">roulade</td>
+      <td>walk</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>轮滑走</td>
+      <td class="mono">roller</td>
+      <td>rollers</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>摆滑</td>
+      <td class="mono">swizzle</td>
+      <td>rollers</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>原地转</td>
+      <td class="mono">spin</td>
+      <td>rollers</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>轮滑下蹲</td>
+      <td class="mono">roller_crouch</td>
+      <td>rollers</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>下坡滑</td>
+      <td class="mono">roller_slope</td>
+      <td>rollers</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr><tr class="ok">
+      <td>轮上爬起</td>
+      <td class="mono">roller_standup</td>
+      <td>rollers</td>
+      <td>下载成功</td>
+      <td>互动出现</td>
+      <td>卸载成功</td>
+      <td>互动消失</td>
+      <td>通过</td>
+    </tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>4. 抽样：奔跑 / 前滚翻 / 轮滑走</h2>
+    <div class="grid">
+      <figure><img src="shots/app-interact-run-on.png" alt="run on"/><figcaption>下载奔跑后，互动出现「奔跑」</figcaption></figure>
+      <figure><img src="shots/app-interact-run-off.png" alt="run off"/><figcaption>卸载奔跑后，互动不再有它</figcaption></figure>
+      <figure><img src="shots/app-interact-roulade-on.png" alt="roulade on"/><figcaption>下载前滚翻后，动作栏出现</figcaption></figure>
+      <figure><img src="shots/app-interact-roulade-off.png" alt="roulade off"/><figcaption>卸载前滚翻后，动作栏没有</figcaption></figure>
+    </div>
+  </section>
+
+  <p class="note">出厂能力（行走、坐下 / 站起）卸掉的是 ubuntu-lan 那份覆盖文件，内置 alpha_*.onnx 还在，所以互动栏不会空。其余 16 个：卸掉就从互动页消失，Body-sim 也不再挂那条会话。</p>
+</div>
+</body>
+</html>
