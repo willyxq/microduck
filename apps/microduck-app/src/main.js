@@ -297,8 +297,8 @@ function interactView() {
         <p class="kicker">${COPY.cameraKicker}</p>
         ${
           state.cameraLive
-            ? `<p class="title">MuJoCo 现场机位</p>
-        <p class="sub">局域网画面，不是 BLE。</p>
+            ? `<p class="title">跟随鸭子</p>
+        <p class="sub">局域网画面，不是 BLE。电脑上的 MuJoCo 窗口是真实世界。</p>
         <img class="stage-live" data-testid="camera-feed" src="${SIM_DUCK.cameraStill}" alt="body camera" />`
             : `<p class="title">${COPY.cameraTitle}</p>
         <p class="sub">${COPY.cameraSub}</p>
@@ -312,7 +312,16 @@ function interactView() {
         <button class="action" data-testid="quack" data-act="quack">叫一声</button>
       </div>
       <p class="kicker" style="margin:20px 0 8px">手动驾驶 · 调试能力</p>
-      <div class="stick">等待低延迟 teleop 通道<br/>运动控制不经 BLE</div>
+      ${
+        state.lanReady
+          ? `<div class="stick-wrap">
+        <div class="stick-pad" data-testid="stick-drive">
+          <div class="stick-knob" data-testid="stick-knob"></div>
+        </div>
+      </div>
+      <p class="stick-hint">上前 · 左右转 · 松手即停 · 不经 BLE</p>`
+          : `<div class="stick">等待局域网 teleop<br/>运动控制不经 BLE</div>`
+      }
     </div>`;
 }
 
@@ -388,6 +397,97 @@ function settingsView() {
     </div>`;
 }
 
+const MAX_LINEAR = 0.3;
+const MAX_ANGULAR = 1.5;
+const drive = { vx: 0, vy: 0, vyaw: 0, sending: false, x: 0, y: 0, holding: false };
+
+function sendTwist(forceZero = false) {
+  if (!state.lanReady) return;
+  const idle = !drive.vx && !drive.vy && !drive.vyaw;
+  if (idle || forceZero) {
+    if (drive.sending || forceZero) {
+      lan.notify("robot.move", { vx: 0, vy: 0, vyaw: 0 });
+      drive.sending = false;
+    }
+    return;
+  }
+  drive.sending = true;
+  lan.notify("robot.move", { vx: drive.vx, vy: drive.vy, vyaw: drive.vyaw });
+}
+
+function haltDrive() {
+  drive.vx = 0;
+  drive.vy = 0;
+  drive.vyaw = 0;
+  drive.x = 0;
+  drive.y = 0;
+  drive.holding = false;
+  sendTwist(true);
+}
+
+function wireStick() {
+  const pad = document.querySelector("[data-testid='stick-drive']");
+  const knob = document.querySelector("[data-testid='stick-knob']");
+  if (!pad || !knob) return;
+  const draw = (x, y) => {
+    knob.style.transform = `translate(${x * 48}px, ${y * 48}px)`;
+  };
+  draw(drive.x, drive.y);
+  const read = (ev) => {
+    const box = pad.getBoundingClientRect();
+    return {
+      x: Math.max(-1, Math.min(1, (2 * (ev.clientX - box.left)) / box.width - 1)),
+      y: Math.max(-1, Math.min(1, (2 * (ev.clientY - box.top)) / box.height - 1)),
+    };
+  };
+  const apply = (x, y) => {
+    drive.x = x;
+    drive.y = y;
+    drive.vx = -y * MAX_LINEAR;
+    drive.vyaw = -x * MAX_ANGULAR;
+    draw(x, y);
+    sendTwist();
+  };
+  pad.onpointerdown = (ev) => {
+    pad.setPointerCapture(ev.pointerId);
+    drive.holding = true;
+    const at = read(ev);
+    apply(at.x, at.y);
+  };
+  pad.onpointermove = (ev) => {
+    if (!pad.hasPointerCapture(ev.pointerId)) return;
+    const at = read(ev);
+    apply(at.x, at.y);
+  };
+  const release = () => apply(0, 0);
+  pad.onpointerup = release;
+  pad.onpointercancel = release;
+}
+
+setInterval(() => {
+  if (drive.sending) sendTwist();
+}, 100);
+
+window.addEventListener("keydown", (ev) => {
+  if (state.screen !== "app" || state.tab !== "interact") return;
+  if (ev.target?.matches?.("input, textarea")) return;
+  const key = ev.key.toLowerCase();
+  if (!["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) return;
+  ev.preventDefault();
+  if (key === "w" || key === "arrowup") drive.vx = MAX_LINEAR;
+  if (key === "s" || key === "arrowdown") drive.vx = -MAX_LINEAR;
+  if (key === "a" || key === "arrowleft") drive.vyaw = MAX_ANGULAR;
+  if (key === "d" || key === "arrowright") drive.vyaw = -MAX_ANGULAR;
+  sendTwist();
+});
+window.addEventListener("keyup", (ev) => {
+  const key = ev.key.toLowerCase();
+  if (key === "w" || key === "arrowup" || key === "s" || key === "arrowdown") drive.vx = 0;
+  if (key === "a" || key === "arrowleft" || key === "d" || key === "arrowright") drive.vyaw = 0;
+  sendTwist();
+});
+window.addEventListener("blur", () => haltDrive());
+
 let camPoll = 0;
 
 function tickCamera() {
@@ -416,11 +516,13 @@ function render() {
     clearInterval(camPoll);
     camPoll = 0;
   }
+  wireStick();
 }
 
 root.addEventListener("click", async (ev) => {
   const tab = ev.target.closest("[data-tab]");
   if (tab) {
+    if (tab.dataset.tab !== "interact") haltDrive();
     state.tab = tab.dataset.tab;
     render();
     if (state.tab === "interact") {
@@ -461,6 +563,7 @@ root.addEventListener("click", async (ev) => {
     return;
   }
   if (ev.target.closest("[data-stop]")) {
+    haltDrive();
     await lanCall("robot.stop", {}, COPY.stopLan, COPY.stop);
     return;
   }

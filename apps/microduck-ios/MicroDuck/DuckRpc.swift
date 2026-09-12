@@ -84,6 +84,19 @@ final class DuckRpc: @unchecked Sendable {
         return try JSONDecoder().decode(AuthResult.self, from: data)
     }
 
+    func notify(_ method: String, params: [String: Any] = [:]) {
+        let payload: [String: Any] = [
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload, options: []),
+              var line = String(data: data, encoding: .utf8)
+        else { return }
+        line += "\n"
+        task?.send(.string(line)) { _ in }
+    }
+
     @discardableResult
     func call(_ method: String, params: [String: Any] = [:]) async throws -> Any {
         try await connect()

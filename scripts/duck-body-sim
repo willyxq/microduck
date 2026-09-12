@@ -5,9 +5,9 @@
 #   scripts/duck-body-sim status
 #   scripts/duck-body-sim down
 #
-# App talks ws://127.0.0.1:17434 (robot.stop / robot.do / robot.sound)
-# and http://127.0.0.1:17435/camera.mjpeg. See docs/app-demo/SIM-DUCK.md.
-# Default is headless (offscreen camera). Window: DUCK_BODY_VIEWER=1.
+# App talks ws://127.0.0.1:17434 (robot.stop / robot.do / robot.sound / robot.move)
+# and http://127.0.0.1:17435/camera.mjpeg. GLFW window is the "real world".
+# Headless (CI): DUCK_BODY_HEADLESS=1. See docs/app-demo/SIM-DUCK.md.
 
 set -eu
 STATE="${DUCK_BODY_SIM_STATE:-$HOME/.cache/duck-body-sim}"
@@ -50,15 +50,14 @@ up() {
     mkdir -p "$STATE"
     python3 -c 'import mujoco,websockets' 2>/dev/null \
         || die "need python3 packages mujoco and websockets (pip install mujoco websockets pillow)"
-    extra="--headless"
+    extra=""
     py=python3
-    if [ "${DUCK_BODY_VIEWER:-}" = "1" ]; then
-        extra=""
-        if command -v mjpython >/dev/null 2>&1; then
-            py=mjpython
-        elif [ -x "$HOME/Library/Python/3.9/bin/mjpython" ]; then
-            py="$HOME/Library/Python/3.9/bin/mjpython"
-        fi
+    if [ "${DUCK_BODY_HEADLESS:-}" = "1" ]; then
+        extra="--headless"
+    elif command -v mjpython >/dev/null 2>&1; then
+        py=mjpython
+    elif [ -x "$HOME/Library/Python/3.9/bin/mjpython" ]; then
+        py="$HOME/Library/Python/3.9/bin/mjpython"
     fi
     say "starting MuJoCo body with $py"
     nohup "$py" "$REPO/sim-body/body.py" $extra \

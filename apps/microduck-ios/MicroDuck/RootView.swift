@@ -66,6 +66,9 @@ struct TabBar: View {
         HStack(spacing: 0) {
             ForEach(Tab.allCases) { tab in
                 Button {
+                    if tab != .interact {
+                        model.haltDrive()
+                    }
                     model.tab = tab
                     if tab == .interact {
                         Task { await model.probeCamera() }
@@ -293,9 +296,9 @@ struct InteractView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(Palette.muted)
                     if model.cameraLive {
-                        Text("MuJoCo 头视 / 现场机位")
+                        Text("跟随鸭子")
                             .font(.system(size: 16, weight: .bold))
-                        Text("局域网画面，不是 BLE。")
+                        Text("局域网画面，不是 BLE。电脑上的 MuJoCo 窗口是真实世界。")
                             .font(.system(size: 14))
                             .foregroundStyle(Palette.muted)
                         CameraFeed()
@@ -328,6 +331,7 @@ struct InteractView: View {
                 .modifier(Card())
                 .accessibilityIdentifier("camera-placeholder")
                 Button {
+                    model.haltDrive()
                     Task { await model.lanOrToast("robot.stop", [:], L1Copy.stopLan, L1Copy.stop) }
                 } label: {
                     Text("立即停止")
@@ -351,14 +355,22 @@ struct InteractView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
                     .padding(.top, 6)
-                Text("等待低延迟 teleop 通道\n运动控制不经 BLE")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color(red: 0.70, green: 0.68, blue: 0.64))
-                    .multilineTextAlignment(.center)
-                    .frame(width: 168, height: 168)
-                    .background(Color(red: 0.953, green: 0.933, blue: 0.894))
-                    .clipShape(Circle())
-                    .frame(maxWidth: .infinity)
+                if model.lanReady {
+                    DriveStick()
+                    Text("上前 · 左右转 · 松手即停 · 不经 BLE")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    Text("等待局域网 teleop\n运动控制不经 BLE")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color(red: 0.70, green: 0.68, blue: 0.64))
+                        .multilineTextAlignment(.center)
+                        .frame(width: 168, height: 168)
+                        .background(Color(red: 0.953, green: 0.933, blue: 0.894))
+                        .clipShape(Circle())
+                        .frame(maxWidth: .infinity)
+                }
             }
             .padding(.horizontal, 18)
             .padding(.top, 8)

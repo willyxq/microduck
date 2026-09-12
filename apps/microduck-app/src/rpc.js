@@ -39,6 +39,11 @@ export class DuckRpc {
     return this.call("system.authenticate", { pin });
   }
 
+  notify(method, params = {}) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ jsonrpc: "2.0", method, params }) + "\n");
+  }
+
   async call(method, params = {}) {
     await this.connect();
     const id = this.nextId++;

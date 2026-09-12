@@ -37,6 +37,7 @@ steps:
       wait_for_text: "立即停止"
       assert:
         - element_visible: "[data-testid='camera-feed']"
+        - element_visible: "[data-testid='stick-drive']"
         - text_contains: "局域网"
 
   - interact:

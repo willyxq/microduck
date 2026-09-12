@@ -53,7 +53,7 @@
 
 从 A 到 C，App 的页面和调用名不变。变的是网线。
 
-层 B 现在就能用：`scripts/duck-body-sim up` 起无窗口 MuJoCo、`ws://127.0.0.1:17434`、`http://127.0.0.1:17435`。这还不是上游 `robotd --sim` + `microduck_rl`；坐下是姿态插值。Mac 上要看 3D 窗口：`DUCK_BODY_VIEWER=1 scripts/duck-body-sim up`（`mjpython`）。它不阻塞没有身体时的 L1：LAN 没开，坐下 / 停止继续说诚实 toast。
+层 B 现在就能用：`scripts/duck-body-sim up` 加载 **和 `infer_policy.py` 同一套** `microduck_rl/.../scene.xml`（Cream STL + 棋盘地面），打开 MuJoCo 窗口当真实世界，并提供 `ws://127.0.0.1:17434`、`http://127.0.0.1:17435`。坐下 / 走路仍是姿态插值，不是 ONNX。无窗口：`DUCK_BODY_HEADLESS=1`。LAN 没开时，坐下 / 停止继续说诚实 toast。
 
 ## 3. App-sim 必须长什么样
 
@@ -117,13 +117,13 @@ npx tsx src/cli.ts scenario \
 scripts/sim-tap health
 scripts/harness-ios-l1
 
-# 5. 身体孪生（可选。局域网控制 + 摄像头；窗口加 DUCK_BODY_VIEWER=1）
+# 5. 身体孪生：和 infer_policy 同一套 scene.xml（窗口默认打开）
 scripts/duck-body-sim up
 ```
 
-层 B 的运动走 `ws://127.0.0.1:17434`（`robot.stop` / `robot.do` / `robot.sound`），和 mediad 以后放行的那组名字相同。`sim-btd` 仍然拒绝电机控制。没有身体孪生时，App 继续对坐下 / 停止说诚实 toast。
+层 B 的运动走 `ws://127.0.0.1:17434`（`robot.stop` / `robot.do` / `robot.sound` / `robot.move`），和 mediad 以后放行的那组名字相同。`sim-btd` 仍然拒绝电机控制。没有身体孪生时，App 继续对坐下 / 停止说诚实 toast。
 
-本机这一层还不是上游 `robotd --sim` + `microduck_rl` duck-body：坐下是对 home 姿态做插值，不是 ONNX sitstand。TCP `127.0.0.1:7801` 已经按 `duck_control::sim` 协议 1 回答，RL 仓库到了可以把 `robotd --sim` 接上去。
+MuJoCo 窗口就是 `scripts/infer_policy.py` 的虚拟环境：`scene.xml` + Cream STL。坐下 / 走路仍是姿态插值，不是 ONNX。TCP `127.0.0.1:7801` 已经按 `duck_control::sim` 协议 1 回答，以后可以把 `robotd --sim` 接上去。
 
 探针（没 UI 也能跑，对应原 HANDOFF 的下一枪）：
 

@@ -94,6 +94,7 @@ final class AppModel: ObservableObject {
             Task { await authenticate() }
             return true
         case "nav-home":
+            haltDrive()
             tab = .home
             return true
         case "nav-interact":
@@ -101,12 +102,15 @@ final class AppModel: ObservableObject {
             Task { await probeCamera() }
             return true
         case "nav-models":
+            haltDrive()
             tab = .models
             return true
         case "nav-settings":
+            haltDrive()
             tab = .settings
             return true
         case "stop":
+            haltDrive()
             Task { await lanOrToast("robot.stop", [:], L1Copy.stopLan, L1Copy.stop) }
             return true
         case "sit":
@@ -236,6 +240,16 @@ final class AppModel: ObservableObject {
             lanReady = false
         }
         await probeCamera()
+    }
+
+    func notifyMove(vx: Double, vy: Double = 0, vyaw: Double) {
+        guard lanReady else { return }
+        lan.notify("robot.move", params: ["vx": vx, "vy": vy, "vyaw": vyaw])
+    }
+
+    func haltDrive() {
+        guard lanReady else { return }
+        lan.notify("robot.move", params: ["vx": 0, "vy": 0, "vyaw": 0])
     }
 
     func lanOrToast(_ method: String, _ params: [String: Any], _ ok: String, _ fallback: String) async {

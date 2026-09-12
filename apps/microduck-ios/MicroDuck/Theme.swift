@@ -124,3 +124,59 @@ struct CameraFeed: View {
         }
     }
 }
+
+struct DriveStick: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var knob = CGSize.zero
+    private let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    private let travel: CGFloat = 48
+    private let maxLinear = 0.3
+    private let maxAngular = 1.5
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 1.0, green: 0.992, blue: 0.973),
+                            Color(red: 0.953, green: 0.933, blue: 0.894),
+                            Color(red: 0.910, green: 0.875, blue: 0.816),
+                        ],
+                        center: .center,
+                        startRadius: 10,
+                        endRadius: 90
+                    )
+                )
+                .frame(width: 176, height: 176)
+                .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
+            Circle()
+                .fill(Palette.duck)
+                .frame(width: 64, height: 64)
+                .offset(knob)
+                .shadow(color: Color.black.opacity(0.16), radius: 10, y: 6)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityIdentifier("stick-drive")
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    let x = max(-1, min(1, value.translation.width / travel))
+                    let y = max(-1, min(1, value.translation.height / travel))
+                    knob = CGSize(width: x * travel, height: y * travel)
+                    model.notifyMove(vx: Double(-y) * maxLinear, vyaw: Double(-x) * maxAngular)
+                }
+                .onEnded { _ in
+                    knob = .zero
+                    model.haltDrive()
+                }
+        )
+        .onReceive(timer) { _ in
+            if knob != .zero {
+                let x = Double(knob.width / travel)
+                let y = Double(knob.height / travel)
+                model.notifyMove(vx: -y * maxLinear, vyaw: -x * maxAngular)
+            }
+        }
+    }
+}

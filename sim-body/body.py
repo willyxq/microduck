@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Body twin: MuJoCo duck + LAN control + camera.
+"""Body twin: MuJoCo duck + LAN control + camera + world viewer.
 
 Motion lives here, not on the BLE-shaped App-sim pipe (sim-btd :17432).
-The phone talks JSON-RPC over ws://127.0.0.1:17434, same method names mediad
-would forward: robot.stop / robot.do / robot.sound.
+The phone talks JSON-RPC over ws://127.0.0.1:17434:
+  robot.stop / robot.do / robot.sound / robot.move {vx, vy, vyaw}
 
-TCP :7801 speaks duck_control::sim (protocol 1) so robotd --sim can attach later.
-Camera is HTTP MJPEG/JPEG on :17435, from an offscreen renderer looking at the duck.
+robot.move is the official teleop intent. This twin walks by integrating the
+freejoint and a gait around the home pose — not ONNX. Deadman zeros after 500 ms.
 
-This is not microduck_rl's duck-body. No ONNX sitstand. Sit/stand interpolate the
-home pose against a folded pose. Real policies wait for the RL repo + robotd --sim.
+The GLFW window is the same virtual world as microduck_rl's infer_policy demo:
+scene.xml + robot_allcollisions.xml + Cream STL meshes. The JPEG on :17435 is a
+follow camera on that same duck.
 """
 
 from __future__ import annotations
@@ -29,7 +30,11 @@ import mujoco
 import numpy as np
 
 REPO = Path(__file__).resolve().parents[1]
-MJCF = REPO / "kinematics/assets/alpha/robot_walk.xml"
+# Same MJCF infer_policy.py loads for demo inference (cwd-relative there).
+RL_SCENE = Path(os.environ["DUCK_BODY_MJCF"]) if os.environ.get("DUCK_BODY_MJCF") else (
+    REPO.parent / "microduck_rl/src/mjlab_microduck/robot/microduck/scene.xml"
+)
+FALLBACK_MJCF = REPO / "kinematics/assets/alpha/robot_walk.xml"
 
 JOINT_NAMES = [
     "left_hip_yaw",
@@ -49,25 +54,16 @@ JOINT_NAMES = [
     "right_ankle",
 ]
 
-# Home pose from duck-control. Mouth has no hinge in this MJCF.
+# Home pose from infer_policy DEFAULT_POSE / scene.xml STAND. Mouth has no hinge.
 STAND = np.array(
     [0.0, -0.0873, -0.4579, -0.0049, 0.4530, 0.3491, 0.3491, 0.0, 0.0, 0.0, 0.0, 0.0873, 0.4579, 0.0049, -0.4530]
 )
-SIT = STAND.copy()
-SIT[2] = -1.25
-SIT[3] = 1.35
-SIT[4] = 0.15
-SIT[12] = 1.25
-SIT[13] = -1.35
-SIT[14] = -0.15
+SIT = np.array([0.0, 0.0, -0.5236, 1.0472, 0.0, 0.5, 1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5236, -1.0472, 0.0])
 
 PROTOCOL = 1
-
-
-def _vis(body, **kwargs):
-    kwargs.setdefault("contype", 0)
-    kwargs.setdefault("conaffinity", 0)
-    body.add_geom(**kwargs)
+DEADMAN = 0.5
+MAX_LINEAR = 0.3
+MAX_ANGULAR = 1.5
 
 
 def lookat_xyaxes(pos, target, up=(0.0, 0.0, 1.0)):
@@ -77,42 +73,34 @@ def lookat_xyaxes(pos, target, up=(0.0, 0.0, 1.0)):
     x = np.cross(np.asarray(up, dtype=float), z)
     x /= np.linalg.norm(x)
     y = np.cross(z, x)
-    return np.concatenate([x, y]).tolist()
+    return np.concatenate([x, y])
+
+
+def yaw_of(qpos) -> float:
+    qw, qx, qy, qz = (float(qpos[3]), float(qpos[4]), float(qpos[5]), float(qpos[6]))
+    return float(np.arctan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz)))
 
 
 def compile_model():
-    spec = mujoco.MjSpec.from_file(str(MJCF))
-    spec.worldbody.add_geom(
-        name="floor",
-        type=mujoco.mjtGeom.mjGEOM_PLANE,
-        size=[2, 2, 0.1],
-        rgba=[0.82, 0.78, 0.70, 1],
-    )
-    spec.worldbody.add_light(name="sun", pos=[0.5, -0.4, 1.4], dir=[-0.3, 0.25, -1], diffuse=[0.85, 0.82, 0.75])
-    spec.worldbody.add_light(name="fill", pos=[-0.3, 0.4, 1.0], dir=[0.2, -0.2, -1], diffuse=[0.35, 0.38, 0.42])
-    cam_pos = [0.28, -0.24, 0.18]
+    mjcf = RL_SCENE if RL_SCENE.exists() else FALLBACK_MJCF
+    if not mjcf.exists():
+        raise FileNotFoundError(f"no MicroDuck MJCF at {RL_SCENE} or {FALLBACK_MJCF}")
+    print(f"body-sim mesh {mjcf}", flush=True)
+    spec = mujoco.MjSpec.from_file(str(mjcf))
+    cam_pos = [0.32, -0.28, 0.20]
     spec.worldbody.add_camera(
         name="app_cam",
         pos=cam_pos,
-        xyaxes=lookat_xyaxes(cam_pos, [0.0, 0.0, 0.07]),
+        xyaxes=lookat_xyaxes(cam_pos, [0.0, 0.0, 0.07]).tolist(),
     )
-    duck = [0.95, 0.71, 0.17, 1]
-    beak = [0.95, 0.45, 0.12, 1]
-    left = [0.22, 0.52, 0.92, 1]
-    right = [0.18, 0.72, 0.42, 1]
-    # Only decorate the silhouette bodies. Intermediate hinge frames are rotated;
-    # capsules there look like a molecule, not a duck.
-    for body in spec.bodies:
-        name = body.name or ""
-        if name == "trunk_base":
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_ELLIPSOID, size=[0.058, 0.044, 0.038], pos=[-0.012, 0, 0.01], rgba=duck)
-        elif name == "bottom_head_shell":
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.034, 0, 0], pos=[0.0, 0.0, -0.04], rgba=duck)
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_ELLIPSOID, size=[0.022, 0.011, 0.008], pos=[0.012, 0, -0.072], rgba=beak)
-        elif name == "ankle_left":
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.015, 0, 0], pos=[0, -0.02, -0.012], rgba=left)
-        elif name == "ankle_right":
-            _vis(body, type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.015, 0, 0], pos=[0, 0.02, -0.012], rgba=right)
+    if mjcf == FALLBACK_MJCF:
+        spec.worldbody.add_geom(
+            name="floor",
+            type=mujoco.mjtGeom.mjGEOM_PLANE,
+            size=[4, 4, 0.1],
+            rgba=[0.78, 0.74, 0.66, 1],
+        )
+        spec.worldbody.add_light(name="sun", pos=[0.8, -0.6, 2.0], dir=[-0.25, 0.2, -1], diffuse=[0.9, 0.86, 0.78])
     return spec.compile()
 
 
@@ -126,13 +114,23 @@ class Body:
             jid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)
             if jid >= 0:
                 self.adr[name] = self.model.jnt_qposadr[jid]
+        self.cam_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, "app_cam")
         self.sitting = False
         self.target = STAND.copy()
         self.stopped = False
         self.quack_until = 0.0
-        self.apply_named(STAND)
-        self.data.qpos[2] = 0.12
+        self.twist = np.zeros(3)
+        self.last_move = 0.0
+        self.phase = 0.0
+        kid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_KEY, "STAND")
+        if kid >= 0:
+            mujoco.mj_resetDataKeyframe(self.model, self.data, kid)
+        else:
+            self.apply_named(STAND)
+            self.data.qpos[0:3] = [0.0, 0.0, 0.12]
+            self.data.qpos[3:7] = [1.0, 0.0, 0.0, 0.0]
         mujoco.mj_forward(self.model, self.data)
+        self.update_follow_cam()
 
     def apply_named(self, pose):
         for i, name in enumerate(JOINT_NAMES):
@@ -154,10 +152,12 @@ class Body:
         if skill == "sit_toggle":
             self.sitting = not self.sitting
             self.stopped = False
+            self.twist[:] = 0
             self.target = SIT.copy() if self.sitting else STAND.copy()
             return "sitting" if self.sitting else "standing"
         if skill in ("stop",):
             self.stopped = True
+            self.twist[:] = 0
             self.target = np.array(self.read15())
             return "stopped"
         if skill in ("quack", "sound"):
@@ -166,19 +166,68 @@ class Body:
             return "quack"
         return skill
 
+    def set_twist(self, vx, vy, vyaw):
+        self.twist[0] = float(np.clip(vx, -MAX_LINEAR, MAX_LINEAR))
+        self.twist[1] = float(np.clip(vy, -MAX_LINEAR, MAX_LINEAR))
+        self.twist[2] = float(np.clip(vyaw, -MAX_ANGULAR, MAX_ANGULAR))
+        self.last_move = time.time()
+        self.stopped = False
+        if self.sitting and (abs(self.twist[0]) + abs(self.twist[1]) + abs(self.twist[2])) > 1e-3:
+            self.sitting = False
+            self.target = STAND.copy()
+
+    def update_follow_cam(self):
+        x, y, z = float(self.data.qpos[0]), float(self.data.qpos[1]), float(self.data.qpos[2])
+        yaw = yaw_of(self.data.qpos)
+        back, side, up = 0.34, -0.22, 0.14
+        cx = x - back * np.cos(yaw) - side * np.sin(yaw)
+        cy = y - back * np.sin(yaw) + side * np.cos(yaw)
+        cz = z + up
+        pos = np.array([cx, cy, cz])
+        self.model.cam_pos[self.cam_id] = pos
+        axes = lookat_xyaxes(pos, [x, y, z + 0.05])
+        xaxis, yaxis = axes[:3], axes[3:]
+        zaxis = np.cross(xaxis, yaxis)
+        mat = np.column_stack([xaxis, yaxis, zaxis]).ravel(order="C")
+        quat = np.zeros(4)
+        mujoco.mju_mat2Quat(quat, mat)
+        self.model.cam_quat[self.cam_id] = quat
+
     def step(self, dt=0.02):
         with self.lock:
+            if self.last_move and (time.time() - self.last_move) > DEADMAN:
+                self.twist[:] = 0
+            vx, vy, vyaw = (float(self.twist[0]), float(self.twist[1]), float(self.twist[2]))
+            moving = (vx * vx + vy * vy + vyaw * vyaw) > 4e-4
+            if moving and not self.stopped:
+                yaw = yaw_of(self.data.qpos)
+                self.data.qpos[0] += (vx * np.cos(yaw) - vy * np.sin(yaw)) * dt
+                self.data.qpos[1] += (vx * np.sin(yaw) + vy * np.cos(yaw)) * dt
+                yaw += vyaw * dt
+                self.data.qpos[3] = np.cos(yaw / 2)
+                self.data.qpos[4] = 0.0
+                self.data.qpos[5] = 0.0
+                self.data.qpos[6] = np.sin(yaw / 2)
+                self.phase += dt * (3.6 + 10.0 * min((vx * vx + vy * vy) ** 0.5, 0.3))
+                swing = 0.32 * np.sin(self.phase)
+                pose = STAND.copy()
+                pose[2] = STAND[2] + swing
+                pose[3] = STAND[3] - 0.55 * swing
+                pose[12] = STAND[12] - swing
+                pose[13] = STAND[13] + 0.55 * swing
+                self.target = pose
+            z_tgt = 0.07 if self.sitting else 0.12
+            self.data.qpos[2] += 0.16 * (z_tgt - self.data.qpos[2])
             for i, name in enumerate(JOINT_NAMES):
                 if name not in self.adr:
                     continue
                 cur = self.data.qpos[self.adr[name]]
                 tgt = float(self.target[i])
-                self.data.qpos[self.adr[name]] = cur + 0.18 * (tgt - cur)
-            z_tgt = 0.07 if self.sitting else 0.12
-            self.data.qpos[2] += 0.12 * (z_tgt - self.data.qpos[2])
+                self.data.qpos[self.adr[name]] = cur + 0.22 * (tgt - cur)
             if time.time() < self.quack_until and "head_pitch" in self.adr:
                 self.data.qpos[self.adr["head_pitch"]] = 0.62
             mujoco.mj_forward(self.model, self.data)
+            self.update_follow_cam()
 
 
 BODY = Body()
@@ -203,15 +252,14 @@ def render_loop(stop: threading.Event, width=480, height=320):
             ok, buf = cv2.imencode(".jpg", frame[:, :, ::-1], [int(cv2.IMWRITE_JPEG_QUALITY), 70])
             raw = buf.tobytes() if ok else b""
         except Exception:
-            raw = _ppm_fallback(frame)
+            raw = _jpeg(frame)
         if raw:
             with JPEG["lock"]:
                 JPEG["bytes"] = raw
         time.sleep(0.05)
 
 
-def _ppm_fallback(frame) -> bytes:
-    # JPEG without OpenCV: write a tiny JFIF via PIL if present, else PPM bytes clients ignore.
+def _jpeg(frame) -> bytes:
     try:
         from io import BytesIO
 
@@ -251,6 +299,7 @@ class CameraHandler(BaseHTTPRequestHandler):
                     "bridge": "microduck-body",
                     "sitting": BODY.sitting,
                     "camera": has_frame,
+                    "viewer": True,
                 }
             ).encode()
             self.send_header("Content-Length", str(len(body)))
@@ -298,20 +347,24 @@ def rpc_result(req_id, result=None, error=None):
 
 
 def handle_call(method: str, params: dict, req_id):
+    params = params or {}
     if method == "hello":
-        return rpc_result(req_id, {"api_version": 16, "daemon_version": "body-sim", "channel": "lan"})
+        return rpc_result(req_id, {"api_version": 16, "daemon_version": "body-sim", "channel": "lan", "teleop": True})
     if method == "robot.health":
         return rpc_result(req_id, {"healthy": True, "reason": "mujoco body", "sitting": BODY.sitting})
     if method == "robot.stop":
         BODY.set_skill("stop")
         return rpc_result(req_id, {"ok": True, "state": "stopped", "channel": "lan"})
     if method == "robot.do":
-        skill = (params or {}).get("skill") or ""
+        skill = params.get("skill") or ""
         state = BODY.set_skill(skill)
         return rpc_result(req_id, {"ok": True, "skill": skill, "state": state, "channel": "lan"})
     if method == "robot.sound":
         BODY.set_skill("quack")
         return rpc_result(req_id, {"ok": True, "channel": "lan"})
+    if method == "robot.move":
+        BODY.set_twist(params.get("vx") or 0, params.get("vy") or 0, params.get("vyaw") or 0)
+        return rpc_result(req_id, {"ok": True, "channel": "lan", "deadman_ms": int(DEADMAN * 1000)})
     if method == "camera.info":
         with JPEG["lock"]:
             has_frame = bool(JPEG["bytes"])
@@ -338,7 +391,8 @@ async def lan_handler(ws):
                 await ws.send(rpc_result(None, error="bad json"))
                 continue
             reply = handle_call(msg.get("method") or "", msg.get("params") or {}, msg.get("id"))
-            await ws.send(reply)
+            if msg.get("id") is not None:
+                await ws.send(reply)
 
 
 def start_http(port: int):
@@ -411,7 +465,8 @@ def maybe_viewer(stop: threading.Event):
     except Exception as exc:
         print(f"viewer unavailable: {exc}", flush=True)
         return
-    with mujoco.viewer.launch_passive(BODY.model, BODY.data) as viewer:
+    with mujoco.viewer.launch_passive(BODY.model, BODY.data, show_left_ui=False, show_right_ui=False) as viewer:
+        print("world viewer open — infer_policy scene.xml", flush=True)
         while viewer.is_running() and not stop.is_set():
             with BODY.lock:
                 viewer.sync()
@@ -446,8 +501,6 @@ def start_runtime(args):
 
 
 def detach():
-    # Agent / CI shells often SIGTERM the whole process group when the starter
-    # command ends. Leave that group so LAN and camera keep running.
     try:
         signal.signal(signal.SIGHUP, signal.SIG_IGN)
     except Exception:
@@ -459,7 +512,6 @@ def detach():
 
 
 def main():
-    detach()
     p = argparse.ArgumentParser()
     p.add_argument("--lan-port", type=int, default=17434)
     p.add_argument("--camera-port", type=int, default=17435)
@@ -469,6 +521,7 @@ def main():
     args = p.parse_args()
     if args.headless:
         args.viewer = False
+        detach()
     stop = start_runtime(args)
     if args.viewer:
         try:
