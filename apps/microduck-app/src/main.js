@@ -2,6 +2,7 @@ import { DuckRpc, SIM_DUCK } from "./rpc.js";
 
 const root = document.getElementById("app");
 const rpc = new DuckRpc(SIM_DUCK.url);
+const lan = new DuckRpc(SIM_DUCK.lanUrl);
 
 const COPY = {
   stop: "立即停止不走 BLE。真急停是物理按钮；松手停靠 teleop 死人手。",
@@ -11,6 +12,9 @@ const COPY = {
   cameraKicker: "摄像头",
   cameraTitle: "现在没有直播",
   cameraSub: "画面要等局域网 / WebRTC。这里不是假视频。",
+  sitLan: "已切换坐下 / 站起（局域网，不经 BLE）",
+  quackLan: "叫了一声（局域网，不经 BLE）",
+  stopLan: "已停止（局域网控制通道，仍不是物理急停）",
 };
 
 const state = {
@@ -28,6 +32,8 @@ const state = {
   installed: [],
   wifiDraft: null,
   rollbackDraft: false,
+  lanReady: false,
+  cameraLive: false,
 };
 
 function duckSvg(size = 128) {
@@ -76,8 +82,50 @@ async function connectAndAuth(pin) {
   }
   state.info = await rpc.call("system.info");
   await refreshStatus();
+  await connectLan();
   state.screen = "app";
   state.tab = "home";
+}
+
+async function probeCamera() {
+  try {
+    const r = await fetch(`${SIM_DUCK.cameraStill}?t=${Date.now()}`, { cache: "no-store" });
+    state.cameraLive = r.ok;
+  } catch {
+    state.cameraLive = false;
+  }
+}
+
+async function connectLan() {
+  try {
+    await lan.connect();
+    await lan.hello();
+    state.lanReady = true;
+    try {
+      const cam = await lan.call("camera.info");
+      if (cam?.live) state.cameraLive = true;
+    } catch {
+      /* HTTP still is the source of truth for the <img> */
+    }
+  } catch {
+    state.lanReady = false;
+  }
+  if (!state.cameraLive) {
+    await probeCamera();
+  }
+}
+
+async function lanCall(method, params, okMessage, fallback) {
+  if (!state.lanReady) {
+    toast(fallback);
+    return;
+  }
+  try {
+    await lan.call(method, params);
+    toast(okMessage);
+  } catch (e) {
+    toast(e.message || fallback);
+  }
 }
 
 async function refreshStatus() {
@@ -247,9 +295,15 @@ function interactView() {
       </div>
       <div class="card" data-testid="camera-placeholder">
         <p class="kicker">${COPY.cameraKicker}</p>
-        <p class="title">${COPY.cameraTitle}</p>
+        ${
+          state.cameraLive
+            ? `<p class="title">MuJoCo 现场机位</p>
+        <p class="sub">局域网画面，不是 BLE。</p>
+        <img class="stage-live" data-testid="camera-feed" src="${SIM_DUCK.cameraStill}" alt="body camera" />`
+            : `<p class="title">${COPY.cameraTitle}</p>
         <p class="sub">${COPY.cameraSub}</p>
-        <div class="stage">${duckSvg(88)}</div>
+        <div class="stage">${duckSvg(88)}</div>`
+        }
       </div>
       <button class="danger" data-testid="stop" data-stop="1">立即停止</button>
       <p class="kicker" style="margin:18px 0 8px">基础互动</p>
@@ -334,6 +388,13 @@ function settingsView() {
     </div>`;
 }
 
+let camPoll = 0;
+
+function tickCamera() {
+  const img = document.querySelector("[data-testid='camera-feed']");
+  if (img) img.src = `${SIM_DUCK.cameraStill}?t=${Date.now()}`;
+}
+
 function render() {
   let body = "";
   if (state.screen === "discover") body = discoverView();
@@ -346,6 +407,15 @@ function render() {
   root.innerHTML = `<div class="phone">${body}${tabbar()}${
     state.toast ? `<div class="toast" data-testid="toast">${state.toast}</div>` : ""
   }</div>`;
+
+  const live = state.screen === "app" && state.tab === "interact" && state.cameraLive;
+  if (live && !camPoll) {
+    tickCamera();
+    camPoll = setInterval(tickCamera, 150);
+  } else if (!live && camPoll) {
+    clearInterval(camPoll);
+    camPoll = 0;
+  }
 }
 
 root.addEventListener("click", async (ev) => {
@@ -353,6 +423,10 @@ root.addEventListener("click", async (ev) => {
   if (tab) {
     state.tab = tab.dataset.tab;
     render();
+    if (state.tab === "interact") {
+      await probeCamera();
+      render();
+    }
     return;
   }
   if (ev.target.closest("[data-open]")) {
@@ -387,11 +461,16 @@ root.addEventListener("click", async (ev) => {
     return;
   }
   if (ev.target.closest("[data-stop]")) {
-    toast(COPY.stop);
+    await lanCall("robot.stop", {}, COPY.stopLan, COPY.stop);
     return;
   }
   if (ev.target.closest("[data-act]")) {
-    toast(COPY.sit);
+    const act = ev.target.closest("[data-act]").dataset.act;
+    if (act === "quack") {
+      await lanCall("robot.sound", {}, COPY.quackLan, COPY.sit);
+    } else {
+      await lanCall("robot.do", { skill: "sit_toggle" }, COPY.sitLan, COPY.sit);
+    }
     return;
   }
   if (ev.target.closest("[data-rollback-cancel]")) {

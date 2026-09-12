@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
@@ -66,6 +67,9 @@ struct TabBar: View {
             ForEach(Tab.allCases) { tab in
                 Button {
                     model.tab = tab
+                    if tab == .interact {
+                        Task { await model.probeCamera() }
+                    }
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: tab.systemImage)
@@ -288,6 +292,16 @@ struct InteractView: View {
                     Text(L1Copy.cameraKicker)
                         .font(.system(size: 12))
                         .foregroundStyle(Palette.muted)
+                    if model.cameraLive {
+                        Text("MuJoCo 头视 / 现场机位")
+                            .font(.system(size: 16, weight: .bold))
+                        Text("局域网画面，不是 BLE。")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Palette.muted)
+                        CameraFeed()
+                            .frame(height: 180)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    } else {
                     Text(L1Copy.cameraTitle)
                         .font(.system(size: 16, weight: .bold))
                     Text(L1Copy.cameraSub)
@@ -309,11 +323,12 @@ struct InteractView: View {
                     }
                     .frame(height: 180)
                     .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    }
                 }
                 .modifier(Card())
                 .accessibilityIdentifier("camera-placeholder")
                 Button {
-                    model.refuseMotion(L1Copy.stop)
+                    Task { await model.lanOrToast("robot.stop", [:], L1Copy.stopLan, L1Copy.stop) }
                 } label: {
                     Text("立即停止")
                         .font(.system(size: 17, weight: .bold))
@@ -354,7 +369,11 @@ struct InteractView: View {
 
     private func action(_ title: String, id: String) -> some View {
         Button {
-            model.refuseMotion(L1Copy.sit)
+            if id == "quack" {
+                Task { await model.lanOrToast("robot.sound", [:], L1Copy.quackLan, L1Copy.sit) }
+            } else {
+                Task { await model.lanOrToast("robot.do", ["skill": "sit_toggle"], L1Copy.sitLan, L1Copy.sit) }
+            }
         } label: {
             Text(title)
                 .font(.system(size: 15, weight: .semibold))

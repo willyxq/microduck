@@ -41,6 +41,9 @@ struct WifiNetwork: Identifiable {
 enum L1Copy {
     static let stop = "立即停止不走 BLE。真急停是物理按钮；松手停靠 teleop 死人手。"
     static let sit = "坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。"
+    static let sitLan = "已切换坐下 / 站起（局域网，不经 BLE）"
+    static let quackLan = "叫了一声（局域网，不经 BLE）"
+    static let stopLan = "已停止（局域网控制通道，仍不是物理急停）"
     static let apply = "模拟环境不下载模型。真鸭子上由它自己的 Wi-Fi 拉签名包。"
     static let rollback = "模拟环境不切换已安装版本。真鸭子上回退已安装版本，不经 BLE 传文件。"
     static let cameraKicker = "摄像头"
@@ -68,8 +71,11 @@ final class AppModel: ObservableObject {
     @Published var wifiDraftSSID: String?
     @Published var wifiDraftPSK = ""
     @Published var rollbackDraft = false
+    @Published var lanReady = false
+    @Published var cameraLive = false
 
     let rpc = DuckRpc()
+    let lan = DuckRpc(url: DuckRpc.lanURL)
 
     init() {
         HarnessTarget.model = self
@@ -92,6 +98,7 @@ final class AppModel: ObservableObject {
             return true
         case "nav-interact":
             tab = .interact
+            Task { await probeCamera() }
             return true
         case "nav-models":
             tab = .models
@@ -100,10 +107,13 @@ final class AppModel: ObservableObject {
             tab = .settings
             return true
         case "stop":
-            refuseMotion(L1Copy.stop)
+            Task { await lanOrToast("robot.stop", [:], L1Copy.stopLan, L1Copy.stop) }
             return true
-        case "sit", "quack":
-            refuseMotion(L1Copy.sit)
+        case "sit":
+            Task { await lanOrToast("robot.do", ["skill": "sit_toggle"], L1Copy.sitLan, L1Copy.sit) }
+            return true
+        case "quack":
+            Task { await lanOrToast("robot.sound", [:], L1Copy.quackLan, L1Copy.sit) }
             return true
         case "apply-update":
             Task { await applyUpdate() }
@@ -191,8 +201,53 @@ final class AppModel: ObservableObject {
                 self.info = info
             }
             await refreshStatus()
+            await connectLan()
             screen = .app
             tab = .home
+        }
+    }
+
+    func probeCamera() async {
+        guard let url = URL(string: "\(DuckRpc.cameraStill)?t=\(Int(Date().timeIntervalSince1970 * 1000))") else {
+            return
+        }
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 1.5
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if (response as? HTTPURLResponse)?.statusCode == 200 {
+                cameraLive = true
+            }
+        } catch {
+            /* LAN hello is independent; keep whatever cameraLive already is if the still is late */
+        }
+    }
+
+    func connectLan() async {
+        do {
+            try await lan.connect()
+            _ = try await lan.hello()
+            lanReady = true
+            if let cam = try? await lan.call("camera.info") as? [String: Any] {
+                cameraLive = bool(cam["live"])
+            }
+        } catch {
+            lanReady = false
+        }
+        await probeCamera()
+    }
+
+    func lanOrToast(_ method: String, _ params: [String: Any], _ ok: String, _ fallback: String) async {
+        guard lanReady else {
+            refuseMotion(fallback)
+            return
+        }
+        do {
+            _ = try await lan.call(method, params: params)
+            showToast(ok)
+        } catch {
+            showToast(error.localizedDescription)
         }
     }
 

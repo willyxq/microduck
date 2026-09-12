@@ -183,6 +183,14 @@ h2 { font-size: 28px; }
   border-radius: 50% 50% 0 0;
 }
 .stage .duck { position: relative; z-index: 1; margin: 0; width: 88px; height: 88px; }
+.stage-live {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 16px;
+  background: #c9b894;
+}
 .stick {
   margin: 16px auto 0;
   width: 168px;

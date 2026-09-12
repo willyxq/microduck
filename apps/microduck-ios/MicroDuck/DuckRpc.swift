@@ -33,6 +33,8 @@ final class DuckRpc: @unchecked Sendable {
     static let apiVersion = 16
     static let transport = ProcessInfo.processInfo.environment["MICRODUCK_TRANSPORT"] ?? "sim"
     static let simURL = URL(string: ProcessInfo.processInfo.environment["MICRODUCK_SIM_URL"] ?? "ws://127.0.0.1:17432")!
+    static let lanURL = URL(string: ProcessInfo.processInfo.environment["MICRODUCK_LAN_URL"] ?? "ws://127.0.0.1:17434")!
+    static let cameraStill = ProcessInfo.processInfo.environment["MICRODUCK_CAMERA_STILL"] ?? "http://127.0.0.1:17435/camera.jpg"
 
     private let url: URL
     private let lock = NSLock()

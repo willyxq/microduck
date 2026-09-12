@@ -1,0 +1,53 @@
+name: "L1: LAN body twin sit and camera"
+url: http://127.0.0.1:5173
+timeout: 60000
+viewport:
+  width: 390
+  height: 844
+
+# Needs scripts/duck-body-sim up. Motion must not go through BLE.
+
+steps:
+  - perceive:
+      wait_for_text: "duck-sim"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='duck-sim']"
+        - action: wait
+          ms: 300
+        - action: type
+          selector: "[data-testid='pin-input']"
+          text: "000000"
+        - action: click
+          selector: "[data-testid='pin-submit']"
+
+  - perceive:
+      wait_for_text: "现场连接"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='nav-interact']"
+        - action: wait
+          ms: 1200
+
+  - perceive:
+      wait_for_text: "立即停止"
+      assert:
+        - element_visible: "[data-testid='camera-feed']"
+        - text_contains: "局域网"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='sit']"
+        - action: wait
+          ms: 700
+
+  - perceive:
+      wait_for_text: "局域网"
+      assert:
+        - text_contains: "不经 BLE"
+        - text_contains: "坐下"

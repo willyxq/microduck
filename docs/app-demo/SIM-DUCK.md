@@ -1,6 +1,6 @@
 # 虚拟鸭子，以及怎么切到真鸭子
 
-状态：已实现（层 A · App-sim） · 日期：2026-09-12
+状态：已实现（层 A · App-sim；层 B · Body-sim） · 日期：2026-09-12
 
 配套 [`DEV-ENVIRONMENT.md`](DEV-ENVIRONMENT.md)。产品目标仍是第一层现场管理员。
 
@@ -48,12 +48,12 @@
 | 层 | 命令（拟定） | 鸭子有什么 | App 怎么连 | 何时用 |
 |---|---|---|---|---|
 | **A. App-sim** | `scripts/duck-app-sim` | 真 IPC + FakeNet + fake robot | `MICRODUCK_TRANSPORT=sim` | **现在。** 开发 L1、跑 harness |
-| **B. Body-sim** | 上游 `scripts/duck-sim` | 真 `robotd --sim` + MuJoCo | 仍走 App-sim 网关，只是后面的 `robotd` 换成 `--sim` | 要看站起来、坐下、叫一声是否真的动 |
+| **B. Body-sim** | `scripts/duck-body-sim` | MuJoCo 身体 + 局域网控制 + 摄像头 | App 另连 `ws://127.0.0.1:17434`，画面 `http://127.0.0.1:17435` | **现在。** 用手机让虚拟鸭子坐下 / 停止 / 叫一声。运动不走 BLE |
 | **C. Real** | 真鸭子开机 | 真无线电、真 Wi-Fi、真舵机 | `MICRODUCK_TRANSPORT=ble` | 鸭子到货。验收扫描和配网 |
 
 从 A 到 C，App 的页面和调用名不变。变的是网线。
 
-Body-sim 在 Mac 上比 Ubuntu 重：上游按 Linux 容器 / `systemd-nspawn` 写的，MuJoCo 在 Apple Silicon 上要单独接。它不阻塞 L1。L1 先把 A 做稳。
+层 B 现在就能用：`scripts/duck-body-sim up` 起 MuJoCo、`ws://127.0.0.1:17434`、`http://127.0.0.1:17435`。这还不是上游 `robotd --sim` + `microduck_rl`；坐下是姿态插值。Mac 上窗口要用 `mjpython`。它不阻塞没有身体时的 L1：LAN 没开，坐下 / 停止继续说诚实 toast。
 
 ## 3. App-sim 必须长什么样
 
@@ -116,7 +116,14 @@ npx tsx src/cli.ts scenario \
 # 4. iOS 模拟器真点击（App 内 127.0.0.1:17433，不点 Simulator 窗口）
 scripts/sim-tap health
 scripts/harness-ios-l1
+
+# 5. 身体孪生（可选。MuJoCo 窗口 + 局域网控制 + 摄像头）
+scripts/duck-body-sim up
 ```
+
+层 B 的运动走 `ws://127.0.0.1:17434`（`robot.stop` / `robot.do` / `robot.sound`），和 mediad 以后放行的那组名字相同。`sim-btd` 仍然拒绝电机控制。没有身体孪生时，App 继续对坐下 / 停止说诚实 toast。
+
+本机这一层还不是上游 `robotd --sim` + `microduck_rl` duck-body：坐下是对 home 姿态做插值，不是 ONNX sitstand。TCP `127.0.0.1:7801` 已经按 `duck_control::sim` 协议 1 回答，RL 仓库到了可以把 `robotd --sim` 接上去。
 
 探针（没 UI 也能跑，对应原 HANDOFF 的下一枪）：
 

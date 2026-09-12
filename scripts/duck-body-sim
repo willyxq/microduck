@@ -1,0 +1,107 @@
+#!/bin/sh
+# Body twin: MuJoCo duck + LAN control + camera. Not BLE, not App-sim.
+#
+#   scripts/duck-body-sim up
+#   scripts/duck-body-sim status
+#   scripts/duck-body-sim down
+#
+# App talks ws://127.0.0.1:17434 (robot.stop / robot.do / robot.sound)
+# and http://127.0.0.1:17435/camera.mjpeg. See docs/app-demo/SIM-DUCK.md.
+
+set -eu
+STATE="${DUCK_BODY_SIM_STATE:-$HOME/.cache/duck-body-sim}"
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+LAN="${DUCK_BODY_LAN:-127.0.0.1:17434}"
+CAM="${DUCK_BODY_CAM:-127.0.0.1:17435}"
+BODY="${DUCK_BODY_IO:-127.0.0.1:7801}"
+
+say() { printf '\033[36m==\033[0m %s\n' "$*"; }
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+
+stop_one() {
+    [ -f "$STATE/$1.pid" ] || return 0
+    pid="$(cat "$STATE/$1.pid")"
+    kill -TERM "$pid" 2>/dev/null || true
+    i=0
+    while [ $i -lt 25 ] && kill -0 "$pid" 2>/dev/null; do i=$((i + 1)); sleep 0.2; done
+    kill -KILL "$pid" 2>/dev/null || true
+    rm -f "$STATE/$1.pid"
+}
+
+status() {
+    printf 'lan\tws://%s\n' "$LAN"
+    printf 'camera\thttp://%s/camera.mjpeg\n' "$CAM"
+    printf 'remote-io\t%s\n' "$BODY"
+    if [ -f "$STATE/body.pid" ] && kill -0 "$(cat "$STATE/body.pid")" 2>/dev/null; then
+        printf 'body\tup\tpid %s\n' "$(cat "$STATE/body.pid")"
+    else
+        printf 'body\tdown\n'
+    fi
+}
+
+down() {
+    stop_one body
+    say "down"
+}
+
+up() {
+    down
+    mkdir -p "$STATE"
+    python3 -c 'import mujoco,websockets' 2>/dev/null \
+        || die "need python3 packages mujoco and websockets (pip install mujoco websockets pillow)"
+    extra=""
+    py=python3
+    if [ "${DUCK_BODY_HEADLESS:-}" = "1" ]; then
+        extra="--headless"
+    elif command -v mjpython >/dev/null 2>&1; then
+        py=mjpython
+    elif [ -x "$HOME/Library/Python/3.9/bin/mjpython" ]; then
+        py="$HOME/Library/Python/3.9/bin/mjpython"
+    fi
+    say "starting MuJoCo body with $py"
+    nohup "$py" "$REPO/sim-body/body.py" $extra \
+        --lan-port "${LAN##*:}" --camera-port "${CAM##*:}" --body-port "${BODY##*:}" \
+        >"$STATE/body.log" 2>&1 &
+    echo $! > "$STATE/body.pid"
+    i=0
+    while [ $i -lt 80 ]; do
+        code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 1 "http://127.0.0.1:${CAM##*:}/camera.jpg" || true)"
+        [ "$code" = "200" ] && break
+        i=$((i + 1))
+        sleep 0.25
+    done
+    [ "${code:-}" = "200" ] || {
+        tail -n 40 "$STATE/body.log" >&2 || true
+        die "body camera did not come up (see $STATE/body.log)"
+    }
+    status
+    say "App LAN: MICRODUCK_LAN_URL=ws://$LAN"
+    say "camera: http://$CAM/camera.mjpeg"
+}
+
+probe() {
+    curl -sfS --max-time 2 "http://127.0.0.1:${CAM##*:}/health" || die "camera health failed"
+    printf '\n'
+    python3 - <<'PY' || die "LAN hello failed"
+import asyncio, json
+import websockets
+
+async def main():
+    async with websockets.connect("ws://127.0.0.1:17434") as ws:
+        await ws.send(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "hello", "params": {}}) + "\n")
+        print(await ws.recv())
+        await ws.send(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "camera.info", "params": {}}) + "\n")
+        print(await ws.recv())
+
+asyncio.run(main())
+PY
+}
+
+cmd="${1:-up}"
+case "$cmd" in
+    up) up ;;
+    down) down ;;
+    status) status ;;
+    probe) probe ;;
+    *) die "usage: $0 up|down|status|probe" ;;
+esac

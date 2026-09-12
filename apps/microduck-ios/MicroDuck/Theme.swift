@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum Palette {
     static let paper = Color(red: 0.957, green: 0.937, blue: 0.894)
@@ -95,6 +96,31 @@ struct Chip: View {
         case .plain: .white
         case .ok: Palette.tealSoft
         case .warn: Palette.warnSoft
+        }
+    }
+}
+
+struct CameraFeed: View {
+    @State private var image: UIImage?
+    private let timer = Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                Color(red: 0.82, green: 0.76, blue: 0.62)
+            }
+        }
+        .accessibilityIdentifier("camera-feed")
+        .onReceive(timer) { _ in
+            Task.detached {
+                guard let url = URL(string: DuckRpc.cameraStill),
+                      let data = try? Data(contentsOf: url),
+                      let img = UIImage(data: data)
+                else { return }
+                await MainActor.run { image = img }
+            }
         }
     }
 }

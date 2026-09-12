@@ -104,5 +104,8 @@ export const SIM_DUCK = {
   name: "duck-sim",
   serial: "SIM-0001",
   url: import.meta.env.VITE_MICRODUCK_SIM_URL || "ws://127.0.0.1:17432",
+  lanUrl: import.meta.env.VITE_MICRODUCK_LAN_URL || "ws://127.0.0.1:17434",
+  cameraUrl: import.meta.env.VITE_MICRODUCK_CAMERA_URL || "http://127.0.0.1:17435/camera.mjpeg",
+  cameraStill: import.meta.env.VITE_MICRODUCK_CAMERA_STILL || "http://127.0.0.1:17435/camera.jpg",
   transport: import.meta.env.VITE_MICRODUCK_TRANSPORT || "sim",
 };

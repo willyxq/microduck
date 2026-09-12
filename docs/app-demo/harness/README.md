@@ -32,6 +32,7 @@ npx tsx src/cli.ts scenario \
 | `l1-wifi.yaml` | 配网走 `net.scan` / `net.connect`；Pollen 错密码必须说出是密码问题；Cafe 开放网直接加入 |
 | `l1-buttons.yaml` | 真点击：停止 / 坐下 / 更新 / 回退二次确认 / 错密码，截图核对 toast |
 | [`L1-ACCEPTANCE.md`](L1-ACCEPTANCE.md) | 收口验收单：协议 + web 场景 + iOS 点击 |
+| `l1-body.yaml` | 身体孪生已 `up`：互动页有摄像头，坐下走局域网、不经 BLE |
 
 协议层（`hello` / `authenticate` / `system.info`）用 `scripts/duck-app-sim probe`，不要只用截图证明「已经连上鸭子」。
 

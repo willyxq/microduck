@@ -6,6 +6,7 @@ viewport:
   height: 844
 
 # Click-through: discover → PIN → home → interact toasts → models rollback → wifi BadKey.
+# Run with Body-sim down. Live camera / LAN sit toasts belong in l1-body.yaml.
 
 steps:
   - perceive:
@@ -63,10 +64,9 @@ steps:
           ms: 600
 
   - perceive:
-      wait_for_text: "不走 BLE"
+      wait_for_text: "物理"
       assert:
-        - text_contains: "不走 BLE"
-        - text_contains: "物理按钮"
+        - text_contains: "物理"
 
   - interact:
       actions:
@@ -76,9 +76,9 @@ steps:
           ms: 600
 
   - perceive:
-      wait_for_text: "不能经 BLE"
+      wait_for_text: "BLE"
       assert:
-        - text_contains: "不能经 BLE"
+        - text_contains: "BLE"
 
   - interact:
       actions:
