@@ -112,7 +112,7 @@ def uninstall_all() -> list[dict]:
     return [uninstall(skill["id"]) for skill in load_catalog() if _copied(skill)]
 
 
-def detach(policy, skill: dict) -> None:
+def detach_skill(policy, skill: dict) -> None:
     sid = skill["id"]
     if sid == "pick":
         policy.ground_pick_session = None

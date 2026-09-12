@@ -35,7 +35,7 @@ from gait import load_gait
 from skills import (
     attach,
     describe,
-    detach,
+    detach_skill,
     install as install_skill,
     install_all as install_all_skills,
     load_catalog,
@@ -598,7 +598,7 @@ def handle_call(method: str, params: dict, req_id):
             if BODY.gait is not None:
                 with BODY.lock:
                     for skill in skills:
-                        detach(BODY.gait, skill)
+                        detach_skill(BODY.gait, skill)
                         if skill_file(skill) is not None:
                             attach(BODY.gait, skill)
                     if BODY.locomotion not in getattr(BODY.gait, "locomotion_sessions", {}):
