@@ -68,6 +68,16 @@ def _vis(body, **kwargs):
     body.add_geom(**kwargs)
 
 
+def lookat_xyaxes(pos, target, up=(0.0, 0.0, 1.0)):
+    pos = np.asarray(pos, dtype=float)
+    z = pos - np.asarray(target, dtype=float)
+    z /= np.linalg.norm(z)
+    x = np.cross(np.asarray(up, dtype=float), z)
+    x /= np.linalg.norm(x)
+    y = np.cross(z, x)
+    return np.concatenate([x, y]).tolist()
+
+
 def compile_model():
     spec = mujoco.MjSpec.from_file(str(MJCF))
     spec.worldbody.add_geom(
@@ -78,8 +88,12 @@ def compile_model():
     )
     spec.worldbody.add_light(name="sun", pos=[0.5, -0.4, 1.4], dir=[-0.3, 0.25, -1], diffuse=[0.85, 0.82, 0.75])
     spec.worldbody.add_light(name="fill", pos=[-0.3, 0.4, 1.0], dir=[0.2, -0.2, -1], diffuse=[0.35, 0.38, 0.42])
-    # 3/4 studio cam: close enough that sit/stand is obvious in a 480×320 JPEG.
-    spec.worldbody.add_camera(name="app_cam", pos=[0.13, -0.11, 0.09], xyaxes=[0.65, 0.76, 0, -0.24, 0.20, 0.95])
+    cam_pos = [0.28, -0.24, 0.18]
+    spec.worldbody.add_camera(
+        name="app_cam",
+        pos=cam_pos,
+        xyaxes=lookat_xyaxes(cam_pos, [0.0, 0.0, 0.07]),
+    )
     duck = [0.95, 0.71, 0.17, 1]
     beak = [0.95, 0.45, 0.12, 1]
     left = [0.22, 0.52, 0.92, 1]

@@ -53,7 +53,7 @@
 
 从 A 到 C，App 的页面和调用名不变。变的是网线。
 
-层 B 现在就能用：`scripts/duck-body-sim up` 起 MuJoCo、`ws://127.0.0.1:17434`、`http://127.0.0.1:17435`。这还不是上游 `robotd --sim` + `microduck_rl`；坐下是姿态插值。Mac 上窗口要用 `mjpython`。它不阻塞没有身体时的 L1：LAN 没开，坐下 / 停止继续说诚实 toast。
+层 B 现在就能用：`scripts/duck-body-sim up` 起无窗口 MuJoCo、`ws://127.0.0.1:17434`、`http://127.0.0.1:17435`。这还不是上游 `robotd --sim` + `microduck_rl`；坐下是姿态插值。Mac 上要看 3D 窗口：`DUCK_BODY_VIEWER=1 scripts/duck-body-sim up`（`mjpython`）。它不阻塞没有身体时的 L1：LAN 没开，坐下 / 停止继续说诚实 toast。
 
 ## 3. App-sim 必须长什么样
 
@@ -117,7 +117,7 @@ npx tsx src/cli.ts scenario \
 scripts/sim-tap health
 scripts/harness-ios-l1
 
-# 5. 身体孪生（可选。MuJoCo 窗口 + 局域网控制 + 摄像头）
+# 5. 身体孪生（可选。局域网控制 + 摄像头；窗口加 DUCK_BODY_VIEWER=1）
 scripts/duck-body-sim up
 ```
 
