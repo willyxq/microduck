@@ -130,6 +130,13 @@ h2 { font-size: 28px; }
   color: #b9b6af;
   border-color: var(--line);
 }
+.action.on {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+}
+.actions.loco {
+  grid-template-columns: 1fr 1fr;
+}
 
 .list-item, .update, .go {
   display: flex;

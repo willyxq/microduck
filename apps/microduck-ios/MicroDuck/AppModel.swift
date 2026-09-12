@@ -30,6 +30,35 @@ enum Tab: String, CaseIterable, Identifiable {
     var testID: String { "nav-\(rawValue)" }
 }
 
+struct DuckSkill: Identifiable {
+    var id: String
+    var title: String
+    var blurb: String
+    var kind: String
+    var body: String
+    var ready: Bool
+    var installed: Bool
+    var available: Bool
+    var active: Bool
+    var source: String
+
+    static func parse(_ raw: [String: Any]) -> DuckSkill? {
+        guard let id = raw["id"] as? String, let title = raw["title"] as? String else { return nil }
+        return DuckSkill(
+            id: id,
+            title: title,
+            blurb: raw["blurb"] as? String ?? "",
+            kind: raw["kind"] as? String ?? "",
+            body: raw["body"] as? String ?? "walk",
+            ready: raw["ready"] as? Bool ?? false,
+            installed: raw["installed"] as? Bool ?? false,
+            available: raw["available"] as? Bool ?? false,
+            active: raw["active"] as? Bool ?? false,
+            source: raw["source"] as? String ?? ""
+        )
+    }
+}
+
 struct WifiNetwork: Identifiable {
     var id: String { ssid }
     var ssid: String
@@ -73,6 +102,8 @@ final class AppModel: ObservableObject {
     @Published var rollbackDraft = false
     @Published var lanReady = false
     @Published var cameraLive = false
+    @Published var skills: [DuckSkill] = []
+    @Published var locomotion = "walk"
     @Published var driveVx = 0.0
     @Published var driveVyaw = 0.0
     @Published var holdDir = ""
@@ -115,11 +146,15 @@ final class AppModel: ObservableObject {
             return true
         case "nav-interact":
             tab = .interact
-            Task { await probeCamera() }
+            Task {
+                await probeCamera()
+                await probeSkills()
+            }
             return true
         case "nav-models":
             haltDrive()
             tab = .models
+            Task { await probeSkills() }
             return true
         case "nav-settings":
             haltDrive()
@@ -170,6 +205,16 @@ final class AppModel: ObservableObject {
             Task { await joinDraft() }
             return true
         default:
+            if id.hasPrefix("install-") {
+                let skill = String(id.dropFirst("install-".count))
+                Task { await installSkill(skill) }
+                return true
+            }
+            if id.hasPrefix("skill-") {
+                let skill = String(id.dropFirst("skill-".count))
+                Task { await doSkill(skill) }
+                return true
+            }
             if id.hasPrefix("wifi-"), id != "wifi-scan", id != "wifi-join", id != "wifi-password" {
                 let ssid = String(id.dropFirst("wifi-".count))
                 if let net = networks.first(where: { $0.ssid == ssid }) {
@@ -271,6 +316,39 @@ final class AppModel: ObservableObject {
             lanReady = false
         }
         await probeCamera()
+        await probeSkills()
+    }
+
+    func probeSkills() async {
+        guard lanReady else {
+            skills = []
+            return
+        }
+        guard let out = try? await lan.call("skill.list") as? [String: Any] else { return }
+        locomotion = string(out["locomotion"]) ?? "walk"
+        let rows = out["skills"] as? [[String: Any]] ?? []
+        skills = rows.compactMap(DuckSkill.parse)
+    }
+
+    func installSkill(_ id: String) async {
+        guard lanReady else {
+            showToast("先开身体孪生，再下载能力")
+            return
+        }
+        do {
+            _ = try await lan.call("skill.install", params: ["id": id])
+            await probeSkills()
+            let title = skills.first(where: { $0.id == id })?.title ?? id
+            showToast("已启用「\(title)」")
+        } catch {
+            showToast(error.localizedDescription)
+        }
+    }
+
+    func doSkill(_ id: String) async {
+        let title = skills.first(where: { $0.id == id })?.title ?? id
+        await lanOrToast("robot.do", ["skill": id], "\(title)（局域网，不经 BLE）", "这个动作要先下载模型")
+        await probeSkills()
     }
 
     func notifyMove(vx: Double, vy: Double = 0, vyaw: Double) {

@@ -32,6 +32,7 @@ import mujoco
 import numpy as np
 
 from gait import load_gait
+from skills import attach, describe, install as install_skill, load_catalog, set_locomotion
 
 REPO = Path(__file__).resolve().parents[1]
 CONTROL_DT = 0.02
@@ -131,6 +132,7 @@ class Body:
         self.last_move = 0.0
         self.phase = 0.0
         self.ticks = 0
+        self.locomotion = "walk"
         kid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_KEY, "STAND")
         if kid >= 0:
             mujoco.mj_resetDataKeyframe(self.model, self.data, kid)
@@ -192,7 +194,26 @@ class Body:
             self.stopped = False
             self.quack_until = time.time() + 0.35
             return "quack"
-        return skill
+        if self.gait is None:
+            raise ValueError("还没有步态模型")
+        if skill == "pick":
+            if self.gait.ground_pick_session is None:
+                raise ValueError("先到模型页下载「低头捡」")
+            self.stopped = False
+            self.gait.trigger_ground_pick()
+            return "pick"
+        if skill in getattr(self.gait, "behavior_sessions", {}):
+            self.stopped = False
+            self.gait.trigger_behavior(skill)
+            return skill
+        if skill in getattr(self.gait, "locomotion_sessions", {}):
+            self.locomotion = set_locomotion(self.gait, skill)
+            self.stopped = False
+            return self.locomotion
+        catalog = {s["id"]: s["title"] for s in load_catalog()}
+        if skill in catalog:
+            raise ValueError(f"先到模型页下载「{catalog[skill]}」")
+        raise ValueError(f"不会这个动作：{skill}")
 
     def set_twist(self, vx, vy, vyaw):
         self.twist[0] = float(np.clip(vx, -MAX_LINEAR, MAX_LINEAR))
@@ -237,6 +258,7 @@ class Body:
             "hip_pitch": hip,
             "sitting": self.sitting,
             "ticks": self.ticks,
+            "locomotion": self.locomotion,
         }
 
     def step(self, dt=CONTROL_DT):
@@ -255,6 +277,8 @@ class Body:
         if self.stopped:
             vx = vy = vyaw = 0.0
         self.gait.vel_cmd[:] = (vx, vy, vyaw)
+        self.gait.update_ground_pick_phase(dt)
+        self.gait.update_behavior(dt)
         self.gait._update_policy_session()
         self.gait._update_command()
         action = self.gait.infer()
@@ -433,8 +457,24 @@ def handle_call(method: str, params: dict, req_id):
         return rpc_result(req_id, {"ok": True, "state": "stopped", "channel": "lan"})
     if method == "robot.do":
         skill = params.get("skill") or ""
-        state = BODY.set_skill(skill)
+        try:
+            state = BODY.set_skill(skill)
+        except ValueError as exc:
+            return rpc_result(req_id, error=str(exc))
         return rpc_result(req_id, {"ok": True, "skill": skill, "state": state, "channel": "lan"})
+    if method == "skill.list":
+        return rpc_result(req_id, {"skills": describe(BODY.locomotion), "locomotion": BODY.locomotion})
+    if method == "skill.install":
+        skill_id = params.get("id") or params.get("skill") or ""
+        try:
+            info = install_skill(skill_id)
+            skill = next((s for s in load_catalog() if s["id"] == skill_id), None)
+            if BODY.gait is not None and skill is not None:
+                with BODY.lock:
+                    attach(BODY.gait, skill)
+        except (ValueError, FileNotFoundError) as exc:
+            return rpc_result(req_id, error=str(exc))
+        return rpc_result(req_id, {"ok": True, **info, "skills": describe(BODY.locomotion)})
     if method == "robot.sound":
         BODY.set_skill("quack")
         return rpc_result(req_id, {"ok": True, "channel": "lan"})

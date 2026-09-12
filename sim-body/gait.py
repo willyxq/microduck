@@ -46,6 +46,9 @@ def load_gait(model, data):
     if paths["sitstand"].exists():
         kwargs["sitstand_onnx_path"] = str(paths["sitstand"])
     policy = PolicyInference(model, data, **kwargs)
+    from skills import attach_all
+
+    attach_all(policy)
     print(
         f"gait onnx walk={paths['walk'].name} stand={paths['stand'].name if paths['stand'].exists() else '-'} "
         f"sitstand={paths['sitstand'].name if paths['sitstand'].exists() else '-'}",

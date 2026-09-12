@@ -1,0 +1,175 @@
+{
+  "source": "ubuntu-lan:microduck_rl/wandb + logs/rsl_rl",
+  "host": "192.168.3.6",
+  "note": "61-D ONNX family. User picks a capability; Body-sim swaps the session.",
+  "skills": [
+    {
+      "id": "walk",
+      "title": "行走",
+      "blurb": "速度指令走路。手动驾驶默认用它。",
+      "kind": "locomotion",
+      "body": "walk",
+      "file": "walk.onnx",
+      "run": "2026-08-31_12-57-39_walk-full-2048",
+      "builtin": "policies/alpha_walking.onnx"
+    },
+    {
+      "id": "velstand",
+      "title": "走 + 爬起",
+      "blurb": "走路，摔倒后自己爬起来。",
+      "kind": "locomotion",
+      "body": "walk",
+      "file": "velstand.onnx",
+      "run": "2026-09-03_22-49-38_velstand-rough-full-2048"
+    },
+    {
+      "id": "run",
+      "title": "奔跑",
+      "blurb": "更快的速度跟踪。选中后，摇杆用这套步态。",
+      "kind": "locomotion",
+      "body": "walk",
+      "file": "run.onnx",
+      "run": "2026-09-09_15-40-17_running-max-speed"
+    },
+    {
+      "id": "sprint",
+      "title": "冲刺",
+      "blurb": "再快一档的冲刺步态。",
+      "kind": "locomotion",
+      "body": "walk",
+      "file": "sprint.onnx",
+      "run": "2026-09-06_18-27-29_sprint-full-2048"
+    },
+    {
+      "id": "moonwalk",
+      "title": "太空步",
+      "blurb": "向后滑步。选中后，驾驶走这套模型。",
+      "kind": "locomotion",
+      "body": "walk",
+      "file": "moonwalk.onnx",
+      "run": "2026-09-10_18-45-11_moonwalk_backward_glide"
+    },
+    {
+      "id": "hop",
+      "title": "跳步",
+      "blurb": "跳着跑。选中后，摇杆用这套步态。",
+      "kind": "locomotion",
+      "body": "walk",
+      "file": "hop.onnx",
+      "run": "2026-09-10_20-37-01_skip_run_hop"
+    },
+    {
+      "id": "sitstand",
+      "title": "坐下 / 站起",
+      "blurb": "同一条策略完成坐下和站起。",
+      "kind": "pose",
+      "body": "walk",
+      "file": "sitstand.onnx",
+      "run": "2026-09-04_22-04-41_sitstand-flat-full-2048",
+      "builtin": "policies/alpha_sitstand.onnx"
+    },
+    {
+      "id": "standup",
+      "title": "从地上爬起",
+      "blurb": "趴着或坐着时自己站起来。",
+      "kind": "trick",
+      "body": "walk",
+      "file": "standup.onnx",
+      "run": "2026-09-04_17-59-51_standup-flat-full-2048",
+      "duration": 4.0
+    },
+    {
+      "id": "pick",
+      "title": "低头捡",
+      "blurb": "蹲下去用嘴尖点地，再站起来。",
+      "kind": "trick",
+      "body": "walk",
+      "file": "pick.onnx",
+      "run": "2026-09-05_04-35-16_groundpick-flat-full-2048"
+    },
+    {
+      "id": "kick_left",
+      "title": "左脚踢",
+      "blurb": "左腿向前踢一下。",
+      "kind": "trick",
+      "body": "walk",
+      "file": "kick_left.onnx",
+      "run": "2026-09-04_14-47-03_ball-kick-left-full-2048",
+      "duration": 3.0
+    },
+    {
+      "id": "kick_right",
+      "title": "右脚踢",
+      "blurb": "右腿向前踢一下。",
+      "kind": "trick",
+      "body": "walk",
+      "file": "kick_right.onnx",
+      "run": "2026-09-03_18-02-24_ball-kick-right-full-2048",
+      "duration": 3.0
+    },
+    {
+      "id": "roulade",
+      "title": "前滚翻",
+      "blurb": "低头向前滚一周，再站稳。",
+      "kind": "trick",
+      "body": "walk",
+      "file": "roulade.onnx",
+      "run": "2026-09-03_15-01-19_roulade-full-2048",
+      "duration": 2.0
+    },
+    {
+      "id": "roller",
+      "title": "轮滑走",
+      "blurb": "脚底带轮的速度跟踪。当前机体没有轮子。",
+      "kind": "locomotion",
+      "body": "rollers",
+      "file": "roller.onnx",
+      "run": "2026-09-02_13-05-08_roller-full-2048"
+    },
+    {
+      "id": "swizzle",
+      "title": "摆滑",
+      "blurb": "对称摆腿滑行。需要轮滑机体。",
+      "kind": "locomotion",
+      "body": "rollers",
+      "file": "swizzle.onnx",
+      "run": "2026-09-03_01-45-49_swizzle-full-2048"
+    },
+    {
+      "id": "spin",
+      "title": "原地转",
+      "blurb": "轮上快速自转。需要轮滑机体。",
+      "kind": "trick",
+      "body": "rollers",
+      "file": "spin.onnx",
+      "run": "2026-09-05_11-39-48_spin-full-2048"
+    },
+    {
+      "id": "roller_crouch",
+      "title": "轮滑下蹲",
+      "blurb": "滑行时蹲下。需要轮滑机体。",
+      "kind": "pose",
+      "body": "rollers",
+      "file": "roller_crouch.onnx",
+      "run": "2026-09-05_09-41-49_roller-crouch-full-2048"
+    },
+    {
+      "id": "roller_slope",
+      "title": "下坡滑",
+      "blurb": "轮上滑下斜坡。需要轮滑机体。",
+      "kind": "locomotion",
+      "body": "rollers",
+      "file": "roller_slope.onnx",
+      "run": "2026-09-05_13-42-19_roller-slope-full-2048"
+    },
+    {
+      "id": "roller_standup",
+      "title": "轮上爬起",
+      "blurb": "从地上站到轮子上。需要轮滑机体。",
+      "kind": "trick",
+      "body": "rollers",
+      "file": "roller_standup.onnx",
+      "run": "2026-09-06_14-24-18_roller-standup-refix-2048"
+    }
+  ]
+}

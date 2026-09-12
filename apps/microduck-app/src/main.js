@@ -34,6 +34,8 @@ const state = {
   rollbackDraft: false,
   lanReady: false,
   cameraLive: false,
+  skills: [],
+  locomotion: "walk",
 };
 
 function duckSvg(size = 128) {
@@ -132,6 +134,21 @@ async function connectLan() {
   }
   if (!state.cameraLive) {
     await probeCamera();
+  }
+  await probeSkills();
+}
+
+async function probeSkills() {
+  if (!state.lanReady) {
+    state.skills = [];
+    return;
+  }
+  try {
+    const out = await lan.call("skill.list");
+    state.skills = out.skills || [];
+    state.locomotion = out.locomotion || "walk";
+  } catch {
+    state.skills = [];
   }
 }
 
@@ -363,7 +380,34 @@ function interactView() {
         <button class="action" data-testid="sit" data-act="sit">坐下 / 站起</button>
         <button class="action" data-testid="quack" data-act="quack">叫一声</button>
       </div>
+      ${skillActions()}
     </div>`;
+}
+
+function readySkills(kind) {
+  return state.skills.filter((s) => s.ready && s.body === "walk" && (!kind || s.kind === kind));
+}
+
+function skillActions() {
+  const tricks = readySkills("trick");
+  const locos = readySkills("locomotion").filter((s) => s.id !== "walk");
+  if (!tricks.length && !locos.length) {
+    return `<p class="sub">更多动作去「模型」下载。点能力，不用选文件。</p>`;
+  }
+  const loco = locos.length
+    ? `<p class="kicker" style="margin:18px 0 8px">步态</p>
+      <div class="actions loco">
+        ${locos.map((s) => `<button class="action ${s.active ? "on" : ""}" data-skill="${s.id}" data-testid="skill-${s.id}">${s.title}</button>`).join("")}
+      </div>
+      <p class="stick-hint">选一步态后，摇杆自动换模型</p>`
+    : "";
+  const trick = tricks.length
+    ? `<p class="kicker" style="margin:18px 0 8px">动作</p>
+      <div class="actions">
+        ${tricks.map((s) => `<button class="action" data-skill="${s.id}" data-testid="skill-${s.id}">${s.title}</button>`).join("")}
+      </div>`
+    : "";
+  return loco + trick;
 }
 
 function modelsView() {
@@ -393,11 +437,42 @@ function modelsView() {
         <button class="cta" data-testid="rollback-confirm" data-rollback-confirm="1" ${state.busy ? "disabled" : ""}>确认回退</button>
         <button class="ghost wide" data-testid="rollback-cancel" data-rollback-cancel="1">取消</button>
       </div>` : ""}
-      <div class="card">
-        <div class="title">升级到第二层还差什么？</div>
-        <p class="sub">5 个高级意图 · 成功率 90% · 安全验收。现在不要做意图墙。</p>
-      </div>
+      ${capabilityCards()}
     </div>`;
+}
+
+function capabilityCards() {
+  if (!state.skills.length) {
+    return `<div class="card">
+      <div class="title">动作能力</div>
+      <p class="sub">身体孪生在的时候，这里列出 ubuntu-lan 训练好的能力。下载后，互动页直接出现按钮。</p>
+    </div>`;
+  }
+  const walk = state.skills.filter((s) => s.body === "walk");
+  const rollers = state.skills.filter((s) => s.body === "rollers");
+  const card = (s) => {
+    const chip = s.ready ? "已安装" : s.available ? "可下载" : "缺文件";
+    const kind = s.ready ? "ok" : s.available ? "warn" : "";
+    const btn = s.ready
+      ? `<p class="kicker">已可在互动页使用 · 不用选 onnx</p>`
+      : `<button class="cta" data-install="${s.id}" data-testid="install-${s.id}" ${state.busy || !s.available ? "disabled" : ""}>下载并启用</button>`;
+    return `<div class="card" data-testid="skill-card-${s.id}">
+      <div class="row">
+        <div>
+          <div class="title">${s.title}</div>
+          <div class="kicker">${s.kind === "locomotion" ? "步态" : s.kind === "pose" ? "姿态" : "动作"} · ${s.source || ""}</div>
+        </div>
+        <span class="chip ${kind}">${chip}</span>
+      </div>
+      <p class="sub">${s.blurb}</p>
+      ${btn}
+    </div>`;
+  };
+  return `<p class="kicker" style="margin:18px 0 8px">第二层 · 动作能力</p>
+    <p class="sub">点能力，不点文件。下载后推理模型会自己切。</p>
+    ${walk.map(card).join("")}
+    <p class="kicker" style="margin:18px 0 8px">轮滑机体（当前鸭子没有轮）</p>
+    ${rollers.map(card).join("")}`;
 }
 
 function settingsView() {
@@ -637,6 +712,11 @@ root.addEventListener("click", async (ev) => {
     render();
     if (state.tab === "interact") {
       await probeCamera();
+      await probeSkills();
+      render();
+    }
+    if (state.tab === "models") {
+      await probeSkills();
       render();
     }
     return;
@@ -684,6 +764,27 @@ root.addEventListener("click", async (ev) => {
     } else {
       await lanCall("robot.do", { skill: "sit_toggle" }, COPY.sitLan, COPY.sit);
     }
+    return;
+  }
+  const skillBtn = ev.target.closest("[data-skill]");
+  if (skillBtn) {
+    const id = skillBtn.dataset.skill;
+    const meta = state.skills.find((s) => s.id === id);
+    await lanCall("robot.do", { skill: id }, `${meta?.title || id}（局域网，不经 BLE）`, "这个动作要先下载模型");
+    await probeSkills();
+    render();
+    return;
+  }
+  const installBtn = ev.target.closest("[data-install]");
+  if (installBtn) {
+    const id = installBtn.dataset.install;
+    const meta = state.skills.find((s) => s.id === id);
+    await withBusy(async () => {
+      if (!state.lanReady) throw new Error("先开身体孪生，再下载能力");
+      await lan.call("skill.install", { id });
+      await probeSkills();
+      toast(`已启用「${meta?.title || id}」`);
+    });
     return;
   }
   if (ev.target.closest("[data-rollback-cancel]")) {

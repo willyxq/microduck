@@ -375,6 +375,60 @@ struct InteractView: View {
                     action("坐下 / 站起", id: "sit")
                     action("叫一声", id: "quack")
                 }
+                let locos = model.skills.filter { $0.ready && $0.body == "walk" && $0.kind == "locomotion" && $0.id != "walk" }
+                let tricks = model.skills.filter { $0.ready && $0.body == "walk" && $0.kind == "trick" }
+                if locos.isEmpty && tricks.isEmpty {
+                    Text("更多动作去「模型」下载。点能力，不用选文件。")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Palette.muted)
+                }
+                if !locos.isEmpty {
+                    Text("步态")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(locos) { skill in
+                            Button {
+                                Task { await model.doSkill(skill.id) }
+                            } label: {
+                                Text(skill.title)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .frame(maxWidth: .infinity, minHeight: 56)
+                                    .background(.white)
+                                    .overlay {
+                                        if skill.active {
+                                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                                .stroke(Palette.teal, lineWidth: 2)
+                                        }
+                                    }
+                                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("skill-\(skill.id)")
+                        }
+                    }
+                }
+                if !tricks.isEmpty {
+                    Text("动作")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(tricks) { skill in
+                            Button {
+                                Task { await model.doSkill(skill.id) }
+                            } label: {
+                                Text(skill.title)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .frame(maxWidth: .infinity, minHeight: 56)
+                                    .background(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                                    .shadow(color: Color.black.opacity(0.06), radius: 10, y: 6)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("skill-\(skill.id)")
+                        }
+                    }
+                }
             }
             .padding(.horizontal, 18)
             .padding(.top, 8)
@@ -493,20 +547,67 @@ struct ModelsView: View {
                     .modifier(Card())
                     .accessibilityIdentifier("rollback-confirm-card")
                 }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("升级到第二层还差什么？").font(.system(size: 16, weight: .bold))
-                    Text("5 个高级意图 · 成功率 90% · 安全验收。现在不要做意图墙。")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Palette.muted)
+                Text("第二层 · 动作能力")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Palette.muted)
+                Text("点能力，不点文件。下载后推理模型会自己切。")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Palette.muted)
+                ForEach(model.skills.filter { $0.body == "walk" }) { skill in
+                    skillCard(skill)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .modifier(Card())
+                Text("轮滑机体（当前鸭子没有轮）")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Palette.muted)
+                ForEach(model.skills.filter { $0.body == "rollers" }) { skill in
+                    skillCard(skill)
+                }
             }
             .padding(.horizontal, 18)
             .padding(.top, 8)
             .padding(.bottom, 110)
             .foregroundStyle(Palette.ink)
         }
+    }
+
+    private func skillCard(_ skill: DuckSkill) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(skill.title).font(.system(size: 16, weight: .bold))
+                    Text(skill.kind == "locomotion" ? "步态" : skill.kind == "pose" ? "姿态" : "动作")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                }
+                Spacer()
+                Chip(text: skill.ready ? "已安装" : skill.available ? "可下载" : "缺文件", kind: skill.ready ? .ok : .warn)
+            }
+            Text(skill.blurb)
+                .font(.system(size: 14))
+                .foregroundStyle(Palette.muted)
+            if skill.ready {
+                Text("已可在互动页使用 · 不用选 onnx")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Palette.muted)
+            } else {
+                Button {
+                    Task { await model.installSkill(skill.id) }
+                } label: {
+                    Text("下载并启用")
+                        .font(.system(size: 17, weight: .bold))
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .foregroundStyle(Color(red: 0.23, green: 0.16, blue: 0))
+                        .background(skill.available ? Palette.duck : Palette.line)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(!skill.available || model.busy)
+                .accessibilityIdentifier("install-\(skill.id)")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .modifier(Card())
+        .accessibilityIdentifier("skill-card-\(skill.id)")
     }
 
     private func string(_ value: Any?) -> String? {

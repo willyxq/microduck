@@ -55,6 +55,8 @@
 
 层 B 现在就能用：`scripts/duck-body-sim up` 加载 **和 `infer_policy.py` 同一套** `microduck_rl/.../scene.xml`（Cream STL + 棋盘地面），打开 MuJoCo 窗口当真实世界，并提供 `ws://127.0.0.1:17434`、`http://127.0.0.1:17435`。默认行走是 `policies/alpha_walking.onnx`（61-D，和 robotd 同一份），站立 / 坐下用 `alpha_stand.onnx` / `alpha_sitstand.onnx`。App 的 `robot.move` 就是这条步态的速度指令。无窗口：`DUCK_BODY_HEADLESS=1`。LAN 没开时，坐下 / 停止继续说诚实 toast。
 
+第一阶段（互动驾驶 + 默认 ONNX 步态）打了标签 `phase-1-app-teleop`。第二阶段：`policies/trained/` 里是 ubuntu-lan 训练的能力包。用户在「模型」下载能力，「互动」只出现已启用的按钮；`robot.do` / 摇杆按能力自动换推理会话，不选文件。
+
 ## 3. App-sim 必须长什么样
 
 实现时按这个契约写。偏离了，切真机时一定裂。
