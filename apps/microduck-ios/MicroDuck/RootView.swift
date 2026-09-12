@@ -375,7 +375,7 @@ struct InteractView: View {
                     action("坐下 / 站起", id: "sit")
                     action("叫一声", id: "quack")
                 }
-                let locos = model.skills.filter { $0.ready && $0.body == "walk" && $0.kind == "locomotion" && $0.id != "walk" }
+                let locos = model.skills.filter { $0.ready && $0.body == "walk" && $0.kind == "locomotion" }
                 let tricks = model.skills.filter { $0.ready && $0.body == "walk" && $0.kind == "trick" }
                 if locos.isEmpty && tricks.isEmpty {
                     Text("更多动作去「模型」下载。点能力，不用选文件。")
@@ -385,6 +385,9 @@ struct InteractView: View {
                 if !locos.isEmpty {
                     Text("步态")
                         .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                    Text("行走是默认。点奔跑等会换摇杆模型，再点行走切回来。")
+                        .font(.system(size: 13))
                         .foregroundStyle(Palette.muted)
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         ForEach(locos) { skill in

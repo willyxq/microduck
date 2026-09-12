@@ -390,7 +390,7 @@ function readySkills(kind) {
 
 function skillActions() {
   const tricks = readySkills("trick");
-  const locos = readySkills("locomotion").filter((s) => s.id !== "walk");
+  const locos = readySkills("locomotion");
   if (!tricks.length && !locos.length) {
     return `<p class="sub">更多动作去「模型」下载。点能力，不用选文件。</p>`;
   }
@@ -399,8 +399,8 @@ function skillActions() {
       <div class="actions loco">
         ${locos.map((s) => `<button class="action ${s.active ? "on" : ""}" data-skill="${s.id}" data-testid="skill-${s.id}">${s.title}</button>`).join("")}
       </div>
-      <p class="stick-hint">选一步态后，摇杆自动换模型</p>`
-    : "";
+      <p class="stick-hint">行走是默认。点奔跑等会换摇杆模型，再点行走切回来。</p>`
+    : ""
   const trick = tricks.length
     ? `<p class="kicker" style="margin:18px 0 8px">动作</p>
       <div class="actions">
