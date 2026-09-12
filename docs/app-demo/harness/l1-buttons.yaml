@@ -1,0 +1,130 @@
+name: "L1: click buttons and check reactions"
+url: http://127.0.0.1:5173
+timeout: 90000
+viewport:
+  width: 390
+  height: 844
+
+# Click-through: discover → PIN → home → interact toasts → models → wifi BadKey.
+
+steps:
+  - perceive:
+      wait_for_text: "duck-sim"
+      assert:
+        - text_contains: "附近的鸭子"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='duck-sim']"
+        - action: wait
+          ms: 400
+
+  - perceive:
+      wait_for_text: "输入 PIN"
+      assert:
+        - text_contains: "000000"
+
+  - interact:
+      actions:
+        - action: type
+          selector: "[data-testid='pin-input']"
+          text: "000000"
+        - action: click
+          selector: "[data-testid='pin-submit']"
+
+  - perceive:
+      wait_for_text: "现场连接"
+      assert:
+        - text_contains: "一切正常"
+        - text_contains: "首页"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='nav-interact']"
+        - action: wait
+          ms: 400
+
+  - perceive:
+      wait_for_text: "立即停止"
+      assert:
+        - text_contains: "坐下"
+        - text_contains: "运动控制不经 BLE"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-stop='1']"
+        - action: wait
+          ms: 600
+
+  - perceive:
+      wait_for_text: "不走 BLE"
+      assert:
+        - text_contains: "不走 BLE"
+        - text_contains: "物理按钮"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-act='sit']"
+        - action: wait
+          ms: 600
+
+  - perceive:
+      wait_for_text: "不能经 BLE"
+      assert:
+        - text_contains: "不能经 BLE"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='nav-models']"
+        - action: wait
+          ms: 300
+        - action: click
+          selector: "[data-apply='1']"
+        - action: wait
+          ms: 800
+
+  - perceive:
+      wait_for_text: "不下载"
+      assert:
+        - text_contains: "不下载"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='nav-settings']"
+        - action: wait
+          ms: 300
+        - action: click
+          selector: "[data-testid='wifi-scan']"
+        - action: wait
+          ms: 1500
+
+  - perceive:
+      wait_for_text: "Pollen"
+      assert:
+        - text_contains: "Pollen"
+        - text_contains: "Cafe"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='wifi-Pollen']"
+        - action: wait
+          ms: 300
+        - action: type
+          selector: "[data-testid='wifi-password']"
+          text: "wrong-key"
+        - action: click
+          selector: "[data-testid='wifi-join']"
+
+  - perceive:
+      wait_for_text: "密码不对"
+      assert:
+        - text_contains: "BadKey"
+        - text_contains: "密码不对"
+        - no_console_errors: true
