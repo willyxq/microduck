@@ -130,6 +130,7 @@ class Body:
         self.twist = np.zeros(3)
         self.last_move = 0.0
         self.phase = 0.0
+        self.ticks = 0
         kid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_KEY, "STAND")
         if kid >= 0:
             mujoco.mj_resetDataKeyframe(self.model, self.data, kid)
@@ -235,6 +236,7 @@ class Body:
             "z": float(self.data.qpos[2]),
             "hip_pitch": hip,
             "sitting": self.sitting,
+            "ticks": self.ticks,
         }
 
     def step(self, dt=CONTROL_DT):
@@ -245,6 +247,7 @@ class Body:
                 self._step_gait(dt)
             else:
                 self._step_slide(dt)
+            self.ticks += 1
             self.update_follow_cam()
 
     def _step_gait(self, dt):
@@ -299,9 +302,15 @@ JPEG = {"bytes": b"", "lock": threading.Lock()}
 
 
 def physics_loop(stop: threading.Event):
+    nxt = time.perf_counter()
     while not stop.is_set():
         BODY.step()
-        time.sleep(0.02)
+        nxt += CONTROL_DT
+        delay = nxt - time.perf_counter()
+        if delay > 0:
+            time.sleep(delay)
+        else:
+            nxt = time.perf_counter()
 
 
 def render_loop(stop: threading.Event, width=480, height=320):
@@ -309,7 +318,7 @@ def render_loop(stop: threading.Event, width=480, height=320):
     while not stop.is_set():
         with BODY.lock:
             renderer.update_scene(BODY.data, camera="app_cam")
-            frame = renderer.render().copy()
+        frame = renderer.render().copy()
         try:
             import cv2
 
