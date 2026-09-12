@@ -1,8 +1,6 @@
 # MicroDuck 控制 App 产品与系统设计
 
-状态：v0 基线，已冻结 · 日期：2026-09-11
-
-当前演进方向见 [`control-app-evolution.md`](control-app-evolution.md)。本文件保留 2026-09-11 的协议、安全和页面约束，完整视觉存档在 `docs/app-demo/v0/`。
+状态：产品设计草案 · 日期：2026-09-11
 
 ## 1. 产品定位
 

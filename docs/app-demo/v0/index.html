@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MicroDuck App 三层演进设计</title>
+  <title>MicroDuck App v0 存档</title>
   <style>
     :root {
       --paper: #f7f4ed;
@@ -279,100 +279,16 @@
     .good-banner i { font-style: normal; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: white; background: var(--teal); font-size: 24px; }
     .good-banner b { display: block; }
     .good-banner small { color: var(--muted); }
-    .level-switch {
-      max-width: 1160px; margin: 0 auto 34px; padding: 5px;
-      display: grid; grid-template-columns: repeat(3,1fr); gap: 6px;
-      background: #e5dfd3; border-radius: 18px;
-    }
-    .level-switch a {
-      padding: 13px; border-radius: 14px; text-align: center; text-decoration: none;
-      color: var(--ink); font-weight: 800; background: rgba(255,255,255,.45);
-    }
-    .level-switch a:hover { background: white; }
-    .level-section { max-width: 1160px; margin: 0 auto 58px; }
-    .level-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
-    .level-heading h2 { margin: 0; font-size: 32px; }
-    .level-heading p { margin: 5px 0 0; color: var(--muted); }
-    .level-number {
-      display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px;
-      border-radius: 999px; background: var(--teal-soft); color: var(--teal);
-      font-size: 12px; font-weight: 850;
-    }
-    .criteria {
-      max-width: 1160px; margin: 34px auto 0; display: grid;
-      grid-template-columns: repeat(3,1fr); gap: 18px;
-    }
-    .criteria article { background: white; border-radius: 22px; padding: 22px; }
-    .criteria h3 { margin: 0 0 10px; }
-    .criteria p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 14px; }
-    .archive-link { display: inline-flex; margin-top: 18px; color: var(--duck); font-weight: 800; }
-    .level-chip {
-      display: inline-flex; align-items: center; border-radius: 999px; padding: 6px 10px;
-      background: #fff2c8; color: #936900; font-size: 12px; font-weight: 800;
-    }
-    .status-line { display: flex; align-items: center; justify-content: space-between; margin: 8px 0 14px; }
-    .big-action {
-      min-height: 78px; width: 100%; display: flex; align-items: center; gap: 14px;
-      padding: 15px; border: 1px solid var(--line); border-radius: 19px;
-      background: var(--card); color: var(--ink); text-align: left;
-    }
-    .big-action i { font-style: normal; font-size: 30px; }
-    .big-action span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
-    .intent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-    .intent {
-      min-height: 82px; border: 1px solid var(--line); border-radius: 17px;
-      background: white; text-align: left; padding: 13px; font-weight: 800;
-    }
-    .intent i { display: block; font-style: normal; font-size: 25px; margin-bottom: 5px; }
-    .task-card { border-color: #9cd8cf; background: linear-gradient(135deg,#f6fffc,#e4f4f0); }
-    .task-progress { height: 6px; border-radius: 99px; background: #c9e8e2; overflow: hidden; margin-top: 13px; }
-    .task-progress::before { content:""; display:block; width:64%; height:100%; background:var(--teal); }
-    .manual-card { position: relative; opacity: .58; }
-    .manual-card::after {
-      content: "等待低延迟 teleop 通道"; position: absolute; inset: 0;
-      display: grid; place-items: center; border-radius: 21px;
-      color: var(--ink); background: rgba(247,244,237,.76); font-weight: 850;
-    }
-    .mini-sticks { display: flex; justify-content: center; gap: 24px; padding: 8px 0; }
-    .mini-sticks i {
-      width: 68px; height: 68px; border: 2px solid #c9c0af; border-radius: 50%;
-      display: grid; place-items: center; font-style: normal; font-size: 24px;
-    }
-    .mood-card {
-      padding: 20px; min-height: 255px; text-align: center;
-      background: radial-gradient(circle at 50% 34%,#fff7d6 0 22%,transparent 23%),var(--card);
-    }
-    .mood-duck { font-size: 94px; margin: 13px 0 2px; }
-    .mood-card h2 { margin: 0; font-size: 27px; }
-    .mood-card p { color: var(--muted); margin: 7px 0 15px; }
-    .meters { display: flex; justify-content: center; gap: 9px; }
-    .meter { padding: 8px 12px; border-radius: 12px; background: var(--paper); font-size: 12px; }
-    .story { display: flex; gap: 12px; align-items: flex-start; }
-    .story + .story { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
-    .story time { color: var(--muted); font-size: 11px; min-width: 42px; padding-top: 3px; }
-    .story b { display: block; font-size: 14px; }
-    .story small { color: var(--muted); }
-    .takeover {
-      width: 100%; min-height: 43px; border: 1px solid var(--line); border-radius: 14px;
-      background: transparent; color: var(--muted); font-weight: 750;
-    }
-    .always-stop {
-      width: 100%; min-height: 50px; border: 1.5px solid var(--red); border-radius: 16px;
-      background: white; color: var(--red); font-weight: 850; margin-top: 10px;
-    }
 
     @media (max-width: 900px) {
       .gallery { grid-template-columns: repeat(2,1fr); }
       .decision { grid-template-columns: repeat(2,1fr); }
       .interaction-guide { grid-template-columns: 1fr; }
-      .criteria { grid-template-columns: 1fr; }
     }
     @media (max-width: 590px) {
       .site { padding: 34px 16px 60px; }
       .gallery { grid-template-columns: 1fr; }
       .decision, .rules-grid { grid-template-columns: 1fr; }
-      .level-switch { grid-template-columns: 1fr; }
-      .level-heading { display: block; }
     }
   </style>
 </head>
@@ -407,185 +323,6 @@
     }
     function phone(content, active=null, full=false) {
       return `<div class="phone">${statusbar()}<main class="screen ${full?"full":""}">${content}</main>${active?tabs(active):""}</div>`;
-    }
-
-    const levels = [
-      {id:"l1", number:"第一层", name:"基础控制", line:"先把连接、更新和最小互动做可靠"},
-      {id:"l2", number:"第二层", name:"意图控制", line:"告诉鸭子做什么，不再逐步驾驶"},
-      {id:"l3", number:"第三层", name:"自主陪伴", line:"设边界、看生活，必要时召唤和接管"}
-    ];
-    const levelScreens = [
-      ["home","首页"],
-      ["interact","互动"],
-      ["models","模型"]
-    ];
-    function evolutionTabs(active) {
-      const data = [["home","⌂","首页"],["interact","◉","互动"],["models","▦","模型"],["settings","⚙","设置"]];
-      return `<nav class="tabs">${data.map(x => `<div class="tab ${active===x[0]?"active":""}"><i>${x[1]}</i>${x[2]}</div>`).join("")}</nav>`;
-    }
-    function evolutionPhone(content, active) {
-      return `<div class="phone">${statusbar()}<main class="screen">${content}</main>${evolutionTabs(active)}</div>`;
-    }
-
-    function renderEvolutionScreen(level, screen) {
-      if (level === "l1" && screen === "home") return evolutionPhone(`
-        ${appTopbar("Coincoin⌄",'<span class="pill">ᛒ 现场直连　›</span>')}
-        <div class="status-line"><span class="level-chip">第一层 · 基础控制</span><span class="online">● 在线 · 已停止</span></div>
-        <section class="card hero-card">
-          <h2 style="margin-top:7px">一切正常</h2><span class="subtitle">现场管理员模式</span>
-          <div class="stats"><div class="stat"><b>78%</b>电池</div><div class="stat"><b>Wi-Fi</b>Studio_2.4G</div></div>
-          <div class="robot">🐥</div>
-        </section>
-        <section class="card update-banner">
-          <span style="font-size:28px">⇧</span><div class="grow"><b>行走模型有新版本</b><small>v1.3.0 · 已签名 · 6.2 MB</small></div>
-          <button class="btn">查看</button>
-        </section>
-        <button class="big-action"><i>◉</i><b>去互动<span>看画面、停止、坐下或叫一声</span></b><span style="margin-left:auto">›</span></button>
-        <p class="security-note">先可靠，再聪明 · 无厂商控制云</p>
-      `, "home");
-
-      if (level === "l1" && screen === "interact") return evolutionPhone(`
-        ${appTopbar("互动",'<span class="level-chip">基础控制</span>')}
-        <section class="card camera-card">
-          <div class="camera-overlay"><span class="live">● 摄像头实时画面</span><div class="camera-tools"><button class="camera-tool">🔇</button><button class="camera-tool">⛶</button></div></div>
-          <div class="camera-duck">🐥</div>
-        </section>
-        <button class="always-stop">● 立即停止</button>
-        <h3 class="section-title" style="margin-top:16px">基础互动</h3>
-        <section class="intent-grid">
-          <button class="intent"><i>🦆</i>坐下 / 站起</button>
-          <button class="intent"><i>🔊</i>叫一声</button>
-        </section>
-        <section class="card manual-card" style="margin-top:13px">
-          <b>手动驾驶 · 调试能力</b>
-          <div class="mini-sticks"><i>＋</i><i>◉</i></div>
-        </section>
-        <p class="security-note">运动控制绝不经 BLE · 实体手柄负责连续驾驶</p>
-      `, "interact");
-
-      if (level === "l1" && screen === "models") return evolutionPhone(`
-        ${appTopbar("模型",'<button class="camera-tool" style="color:var(--ink);background:white;border:1px solid var(--line)">↻</button>')}
-        <div class="status-line"><span class="level-chip">第一层 · 能力底座</span><span class="online">● 鸭子已联网</span></div>
-        <section class="card model-card">
-          <div class="model-head"><div class="model-icon">🦆</div><div class="model-title"><b>行走 Walk</b><small>当前 v1.2.0</small></div><span class="pill">有更新</span><span>›</span></div>
-          <div class="model-meta">v1.3.0 · 6.2 MB<br>Hugging Face · 签名与 API 已验证</div>
-          <div class="model-actions"><span class="compat">61→14 · API 1</span><button class="btn">更新</button></div>
-        </section>
-        <section class="card model-card">
-          <div class="model-head"><div class="model-icon">🧍</div><div class="model-title"><b>站立 Stand</b><small>当前 v1.1.4</small></div><span class="pill good">✓ 最新</span><span>›</span></div>
-        </section>
-        <section class="card model-card">
-          <div class="model-head"><div class="model-icon">✋</div><div class="model-title"><b>捡起 Ground Pick</b><small>当前 v0.9.2</small></div><span>›</span></div>
-        </section>
-        <section class="card"><b>升级到第二层还差什么？</b><p class="subtitle" style="margin:7px 0 0">5 个高级意图 · 成功率 90% · 安全验收</p></section>
-      `, "models");
-
-      if (level === "l2" && screen === "home") return evolutionPhone(`
-        ${appTopbar("Coincoin⌄",'<span class="pill">◔ 局域网　›</span>')}
-        <div class="status-line"><span class="level-chip">第二层 · 意图控制</span><span class="online">● 正在执行</span></div>
-        <section class="card task-card">
-          <span class="online">已理解你的指令</span>
-          <h2 style="margin:10px 0 4px">正在找红色小球</h2>
-          <p class="subtitle" style="margin:0">客厅 · 已搜索 1 分 24 秒</p>
-          <div class="task-progress"></div>
-          <button class="btn outline" style="margin-top:14px">查看它看到的画面</button>
-        </section>
-        <h3 class="section-title">接下来可以</h3>
-        <section class="intent-grid">
-          <button class="intent"><i>🐾</i>跟着我</button>
-          <button class="intent"><i>⌂</i>回来休息</button>
-        </section>
-        <section class="card update-banner" style="margin-top:13px">
-          <span style="font-size:26px">✨</span><div class="grow"><b>跟随能力变得更稳</b><small>行为模型 v2.1 可更新</small></div><button class="btn">查看</button>
-        </section>
-      `, "home");
-
-      if (level === "l2" && screen === "interact") return evolutionPhone(`
-        ${appTopbar("你想让它做什么？",'<span class="level-chip">意图控制</span>')}
-        <p class="subtitle">点一次告诉鸭子目标，路线和动作由它自己完成。</p>
-        <section class="intent-grid">
-          <button class="intent"><i>🐾</i>跟着我</button>
-          <button class="intent"><i>👋</i>过来</button>
-          <button class="intent"><i>⚽</i>找球玩</button>
-          <button class="intent"><i>✨</i>自己玩</button>
-          <button class="intent"><i>📷</i>看看周围</button>
-          <button class="intent"><i>🌙</i>休息</button>
-        </section>
-        <section class="card task-card" style="margin-top:13px">
-          <div class="activity"><i>✓</i><div><b>环境适合自主行动</b><small>深度、摄像头和避障均正常</small></div></div>
-        </section>
-        <button class="always-stop">● 立即停止</button>
-        <button class="takeover" style="margin-top:9px">手动接管　›</button>
-        <p class="security-note">它会说明“正在做什么”和“为什么停下”</p>
-      `, "interact");
-
-      if (level === "l2" && screen === "models") return evolutionPhone(`
-        ${appTopbar("模型",'<button class="camera-tool" style="color:var(--ink);background:white;border:1px solid var(--line)">↻</button>')}
-        <div class="status-line"><span class="level-chip">第二层 · 行为能力</span><span class="online">● 安全门通过</span></div>
-        <section class="card model-card">
-          <div class="model-head"><div class="model-icon">🐾</div><div class="model-title"><b>跟随 Follow</b><small>当前 v2.0.3</small></div><span class="pill">有更新</span><span>›</span></div>
-          <div class="model-meta"><b style="color:var(--ink)">这次改善：</b>转弯更稳，丢失目标后不乱走<br>真机通过率 93% · 已签名</div>
-          <div class="model-actions"><span class="compat">需要摄像头 + ToF</span><button class="btn">更新</button></div>
-        </section>
-        <section class="card model-card">
-          <div class="model-head"><div class="model-icon">⚽</div><div class="model-title"><b>找球 Ball Play</b><small>当前 v1.4.1</small></div><span class="pill good">✓ 最新</span><span>›</span></div>
-          <div class="model-meta">找球、接近、对准与踢球是一项完整能力</div>
-        </section>
-        <section class="card"><b>升级到第三层还差什么？</b><p class="subtitle" style="margin:7px 0 0">连续自主 30 分钟 · 成功率 95% · 可解释记忆</p></section>
-      `, "models");
-
-      if (level === "l3" && screen === "home") return evolutionPhone(`
-        ${appTopbar("Coincoin 的今天",'<span class="pill">⌄</span>')}
-        <div class="status-line"><span class="level-chip">第三层 · 自主陪伴</span><span class="online">● 在客厅</span></div>
-        <section class="card mood-card">
-          <div class="mood-duck">🐥</div>
-          <h2>心情很好，正在探索</h2>
-          <p>刚刚发现了窗边的新地方</p>
-          <div class="meters"><span class="meter">精力 72%</span><span class="meter">好奇 86%</span><span class="meter">安全</span></div>
-        </section>
-        <section class="card">
-          <h3 class="section-title">需要你知道</h3>
-          <div class="activity"><i>⌁</i><div><b>没有需要处理的事情</b><small>所有传感器与模型运行正常</small></div></div>
-        </section>
-        <button class="big-action"><i>👋</i><b>叫 Coincoin 过来<span>它会自己找到你</span></b><span style="margin-left:auto">›</span></button>
-      `, "home");
-
-      if (level === "l3" && screen === "interact") return evolutionPhone(`
-        ${appTopbar("和 Coincoin 一起",'<span class="level-chip">自主陪伴</span>')}
-        <section class="intent-grid">
-          <button class="intent"><i>👋</i>来找我</button>
-          <button class="intent"><i>⚽</i>一起玩</button>
-          <button class="intent"><i>🌙</i>安静一会</button>
-          <button class="intent"><i>✨</i>你自己决定</button>
-        </section>
-        <section class="card" style="margin-top:13px">
-          <h3 class="section-title">刚才发生了什么</h3>
-          <div class="story"><time>08:21</time><div><b>在窗边观察了 3 分钟</b><small>听到鸟叫，所以转头靠近</small></div></div>
-          <div class="story"><time>08:07</time><div><b>绕开了地上的背包</b><small>ToF 发现前方无法安全通过</small></div></div>
-          <div class="story"><time>07:50</time><div><b>向你问好</b><small>认出了常见的声音</small></div></div>
-        </section>
-        <button class="takeover">查看 / 纠正记忆　›</button>
-        <button class="always-stop">● 立即停止</button>
-        <button class="takeover" style="margin-top:9px">手动接管　›</button>
-      `, "interact");
-
-      if (level === "l3" && screen === "models") return evolutionPhone(`
-        ${appTopbar("能力与成长",'<button class="camera-tool" style="color:var(--ink);background:white;border:1px solid var(--line)">↻</button>')}
-        <div class="status-line"><span class="level-chip">第三层 · 可解释成长</span><span class="online">● 稳定通道</span></div>
-        <section class="card model-card">
-          <div class="model-head"><div class="model-icon">🧠</div><div class="model-title"><b>陪伴大脑 Brain</b><small>稳定版 v3.2.0</small></div><span class="pill good">✓ 当前</span><span>›</span></div>
-          <div class="model-meta">情境、精力与目标选择<br>自主运行 42 分钟 · 关键行为 96.4%</div>
-        </section>
-        <section class="card model-card">
-          <div class="model-head"><div class="model-icon">♡</div><div class="model-title"><b>相处记忆 Memory</b><small>只保存在这只鸭子上</small></div><span>›</span></div>
-          <div class="model-meta">12 条偏好 · 8 个熟悉对象<br>可以查看、纠正或全部删除</div>
-        </section>
-        <section class="card model-card">
-          <div class="model-head"><div class="model-icon">🛡</div><div class="model-title"><b>自主边界</b><small>家庭模式</small></div><span>›</span></div>
-          <div class="model-meta">客厅活动 · 22:00 后安静<br>摄像头仅本地处理</div>
-        </section>
-        <p class="security-note">更新仍由用户确认 · 异常自动退回意图控制</p>
-      `, "models");
     }
 
     function renderScreen(id) {
@@ -737,63 +474,64 @@
     }
 
     function gallery() {
-      const sections = levels.map(level => {
-        const cards = levelScreens.map(([screen,title]) =>
-          '<article class="shot-card">' +
-            '<a href="?level=' + level.id + '&screen=' + screen + '"><img src="assets/' + level.id + '-' + screen + '.png" alt="' + level.name + ' · ' + title + '"></a>' +
-            '<div class="shot-meta"><h2>' + title + '</h2><p>' +
-              (screen === "home" ? "状态与当前任务入口。" : screen === "interact" ? "这一层的人机互动主界面。" : "能力、模型与升级条件。") +
-            '</p><a class="download" href="assets/' + level.id + '-' + screen + '.png" download>↓ 下载 PNG</a></div>' +
-          '</article>'
-        ).join("");
-        return '<section class="level-section" id="' + level.id + '">' +
-          '<header class="level-heading"><div><span class="level-number">' + level.number + '</span><h2>' + level.name + '</h2><p>' + level.line + '</p></div>' +
-          '<a class="download" href="?level=' + level.id + '&screen=interact">查看大图</a></header>' +
-          '<div class="gallery">' + cards + '</div></section>';
-      }).join("");
+      const cards = screens.map(([id,title,desc]) =>
+        '<article class="shot-card">' +
+          '<img src="assets/' + id + '.png" alt="' + title + '">' +
+          '<div class="shot-meta"><h2>' + title + '</h2><p>' + desc + '</p>' +
+          '<a class="download" href="assets/' + id + '.png" download>↓ 下载 PNG</a></div>' +
+        '</article>'
+      ).join("");
       return `<div class="site">
         <header class="hero">
-          <div class="eyebrow">MICRODUCK APP · THREE-LEVEL EVOLUTION</div>
-          <h1>从控制鸭子，到和它生活</h1>
-          <p class="lead">智能提高，不是取消控制，而是把连续驾驶逐步变成高级意图、边界和接管。三个层次使用同一套“首页 / 互动 / 模型 / 设置”，用户不需要重新学习 App。</p>
+          <div class="eyebrow">MICRODUCK CONTROL APP · V0 ARCHIVE · 2026-09-11</div>
+          <h1>设备是主体，手机是现场控制台</h1>
+          <p class="lead">这是冻结的 v0 基线：全局只有“首页 / 控制 / 模型 / 设置”。后续三层演进不再覆盖这套页面，可从上级目录返回。</p>
+          <p class="lead"><a class="video-link" href="../">← 返回三层演进方案</a></p>
           <section class="decision">
-            <div><b>不变的底座</b><span>BLE 配网与更新、设备自己下载模型</span></div>
-            <div><b>不变的安全</b><span>立即停止和手动接管始终保留</span></div>
-            <div><b>逐步降低驾驶</b><span>摇杆 → 高级意图 → 自主陪伴</span></div>
-            <div><b>能力决定层次</b><span>按成功率和安全证据升级，不按日期</span></div>
+            <div><b>BLE</b><span>发现、认证、配网、健康与更新</span></div>
+            <div><b>设备 Wi-Fi</b><span>MicroDuck 直接下载签名模型</span></div>
+            <div><b>局域网 / WebRTC</b><span>视频、实时状态与运动控制</span></div>
+            <div><b>无厂商控制云</b><span>MVP 无账号、商城或订阅</span></div>
           </section>
-          <nav class="level-switch">
-            <a href="#l1">第一层 · 基础控制</a>
-            <a href="#l2">第二层 · 意图控制</a>
-            <a href="#l3">第三层 · 自主陪伴</a>
-          </nav>
         </header>
-        <main>${sections}</main>
+        <main class="gallery">${cards}</main>
         <section class="rules">
-          <h2>层次切换标准</h2>
+          <h2>统一操作规则</h2>
           <div class="rules-grid">
-            <p><b>第一层 → 第二层：</b>至少 5 个高级意图；成功率 ≥ 90%；安全链路完成真机验收；70% 用户任务无需手动驾驶。</p>
-            <p><b>第二层 → 第三层：</b>连续自主 ≥ 30 分钟；关键行为成功率 ≥ 95%；误触发 &lt; 1%；记忆可解释、可纠正、可删除。</p>
+            <p><b>主导航：</b>首页是设备摘要；控制只在局域网通道可用；模型负责检查、更新和回退；设置包含健康、网络、日志和设备管理。</p>
+            <p><b>任务流：</b>添加设备与 Wi-Fi 配网在进入 App 前完成；更新进度与结果为全屏流程。返回后仍落在“模型”，不会跳到新的“能力”“数据”或“设备”标签。</p>
           </div>
-          <p>能力、传感器或模型健康下降时，自动退回上一层；不允许 UI 假装不可用的智能仍然存在。</p>
-          <a class="archive-link" href="v0/">查看冻结的 v0 原设计、全部图片与视频 →</a>
-          <a class="archive-link" href="assets/microduck-final-demo.mp4" download style="margin-left:18px">下载 v0 演示视频（MP4）</a>
+          <a class="video-link" href="assets/microduck-final-demo.mp4" download>下载完整演示视频（MP4）</a>
         </section>
-        <section class="criteria">
-          <article><h3>第一层解决可靠</h3><p>App 首先是现场管理员。互动只有摄像头、停止和少量基础动作；连续驾驶留给实体手柄。</p></article>
-          <article><h3>第二层解决理解</h3><p>用户点“跟着我”或“找球玩”，鸭子自己完成并解释进度。手动接管降为二级入口。</p></article>
-          <article><h3>第三层解决相处</h3><p>App 展示状态、故事、记忆和边界。用户偶尔召唤、纠正或接管，而不是每天开车。</p></article>
+        <section class="interaction-guide">
+          <h2>点击行为已经收敛</h2>
+          <article><h3>首页</h3><ul>
+            <li><b>Coincoin⌄：</b>打开设备选择器。</li>
+            <li><b>现场直连：</b>查看 BLE、Wi-Fi 与局域网连接详情。</li>
+            <li><b>设备卡、最近状态：</b>只读，不伪装成按钮。</li>
+            <li><b>查看更新：</b>进入行走模型详情，不直接安装。</li>
+          </ul></article>
+          <article><h3>控制</h3><ul>
+            <li><b>视频：</b>默认实时显示；静音和全屏为独立按钮。</li>
+            <li><b>移动：</b>持续发送速度，松手回中并立即停。</li>
+            <li><b>头部/摄像头：</b>控制头部朝向，摄像头随之转动。</li>
+            <li><b>停止：</b>清零移动速度，不断电、不让关节失力。</li>
+            <li><b>快捷动作：</b>“坐下”随当前姿态切换为“站起”；左右踢明确分开。服务端接受后锁定冲突动作。</li>
+          </ul></article>
+          <article><h3>模型</h3><ul>
+            <li><b>刷新：</b>检查全部固定槽，不自动安装。</li>
+            <li><b>模型行：</b>进入版本、来源、兼容性和历史详情。</li>
+            <li><b>更新：</b>先打开确认页和安全检查，再开始下载。</li>
+            <li><b>已是最新：</b>状态标签，不可点击。</li>
+            <li><b>底部模型标签：</b>回到槽位列表并保留滚动位置。</li>
+          </ul></article>
         </section>
       </div>`;
     }
 
     const query = new URLSearchParams(location.search);
     const id = query.get("screen");
-    const level = query.get("level");
-    if (level && id && levels.some(x => x.id === level) && levelScreens.some(x => x[0] === id)) {
-      document.body.className = "render-page";
-      document.getElementById("app").innerHTML = renderEvolutionScreen(level, id);
-    } else if (id && screens.some(x => x[0] === id)) {
+    if (id && screens.some(x => x[0] === id)) {
       document.body.className = "render-page";
       document.getElementById("app").innerHTML = renderScreen(id);
     } else {
