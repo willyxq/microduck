@@ -24,3 +24,7 @@ secret*
 # App-sim web client
 /apps/microduck-app/node_modules
 /apps/microduck-app/dist
+
+# iOS derived data and user state
+/apps/microduck-ios/build
+/apps/microduck-ios/**/xcuserdata/
