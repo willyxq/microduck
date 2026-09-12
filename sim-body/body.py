@@ -183,6 +183,21 @@ class Body:
         self.locomotion = "roller" if kind == "rollers" else "walk"
         return True
 
+    def _clear_modes(self, keep_sit: bool = False):
+        gait = self.gait
+        if gait is None:
+            return
+        if gait.behavior_mode:
+            gait.behavior_mode = None
+            gait.behavior_time_left = 0.0
+        if gait.ground_pick_mode:
+            gait.ground_pick_mode = False
+        if not keep_sit and gait.sit_mode:
+            gait.sit_mode = False
+            self.sitting = False
+        gait._update_policy_session()
+        gait._update_command()
+
     def apply_named(self, pose):
         for i, name in enumerate(JOINT_NAMES):
             if name in self.adr:
@@ -236,20 +251,26 @@ class Body:
         if self.gait is None:
             raise ValueError("还没有步态模型")
         if skill in ("sitstand", "roller_crouch"):
+            self._clear_modes(keep_sit=True)
             self.stopped = False
             self.twist[:] = 0
             self.gait.toggle_sit()
             self.sitting = bool(self.gait.sit_mode)
             return "sitting" if self.sitting else "standing"
+        self._clear_modes()
         if skill == "pick":
             if self.gait.ground_pick_session is None:
                 raise ValueError("先到模型页下载「低头捡」")
             self.stopped = False
             self.gait.trigger_ground_pick()
+            if not self.gait.ground_pick_mode:
+                raise ValueError("低头捡没能开始")
             return "pick"
         if skill in getattr(self.gait, "behavior_sessions", {}):
             self.stopped = False
             self.gait.trigger_behavior(skill)
+            if self.gait.behavior_mode != skill:
+                raise ValueError(f"「{skill}」没能开始")
             return skill
         if skill in getattr(self.gait, "locomotion_sessions", {}):
             self.locomotion = set_locomotion(self.gait, skill)
