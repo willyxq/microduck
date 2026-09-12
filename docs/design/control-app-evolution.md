@@ -78,3 +78,5 @@
 ## 6. v0 存档
 
 2026-09-11 的原方案、页面和演示视频完整保存在 `docs/app-demo/v0/`，后续版本不覆盖该基线。
+
+Mac 续做和额度恢复后的检查点见 [`../app-demo/HANDOFF.md`](../app-demo/HANDOFF.md)。
