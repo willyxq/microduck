@@ -226,7 +226,7 @@ struct DrivePanel: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("手动驾驶")
                 .font(.system(size: 16, weight: .bold))
-            Text("在 App 里开。电脑窗口是同一只鸭子。")
+            Text("默认行走模型。按住前进是迈步，不是滑移。")
                 .font(.system(size: 14))
                 .foregroundStyle(Palette.muted)
             HStack(spacing: 8) {

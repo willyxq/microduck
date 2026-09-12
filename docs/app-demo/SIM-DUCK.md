@@ -53,7 +53,7 @@
 
 从 A 到 C，App 的页面和调用名不变。变的是网线。
 
-层 B 现在就能用：`scripts/duck-body-sim up` 加载 **和 `infer_policy.py` 同一套** `microduck_rl/.../scene.xml`（Cream STL + 棋盘地面），打开 MuJoCo 窗口当真实世界，并提供 `ws://127.0.0.1:17434`、`http://127.0.0.1:17435`。坐下 / 走路仍是姿态插值，不是 ONNX。无窗口：`DUCK_BODY_HEADLESS=1`。LAN 没开时，坐下 / 停止继续说诚实 toast。
+层 B 现在就能用：`scripts/duck-body-sim up` 加载 **和 `infer_policy.py` 同一套** `microduck_rl/.../scene.xml`（Cream STL + 棋盘地面），打开 MuJoCo 窗口当真实世界，并提供 `ws://127.0.0.1:17434`、`http://127.0.0.1:17435`。默认行走是 `policies/alpha_walking.onnx`（61-D，和 robotd 同一份），站立 / 坐下用 `alpha_stand.onnx` / `alpha_sitstand.onnx`。App 的 `robot.move` 就是这条步态的速度指令。无窗口：`DUCK_BODY_HEADLESS=1`。LAN 没开时，坐下 / 停止继续说诚实 toast。
 
 ## 3. App-sim 必须长什么样
 
@@ -123,7 +123,7 @@ scripts/duck-body-sim up
 
 层 B 的运动走 `ws://127.0.0.1:17434`（`robot.stop` / `robot.do` / `robot.sound` / `robot.move`），和 mediad 以后放行的那组名字相同。`sim-btd` 仍然拒绝电机控制。没有身体孪生时，App 继续对坐下 / 停止说诚实 toast。
 
-MuJoCo 窗口就是 `scripts/infer_policy.py` 的虚拟环境：`scene.xml` + Cream STL。坐下 / 走路仍是姿态插值，不是 ONNX。TCP `127.0.0.1:7801` 已经按 `duck_control::sim` 协议 1 回答，以后可以把 `robotd --sim` 接上去。
+MuJoCo 窗口就是 `scripts/infer_policy.py` 的虚拟环境：`scene.xml` + Cream STL。默认走路是 `policies/alpha_walking.onnx`。TCP `127.0.0.1:7801` 已经按 `duck_control::sim` 协议 1 回答，以后可以把 `robotd --sim` 接上去。
 
 探针（没 UI 也能跑，对应原 HANDOFF 的下一枪）：
 

@@ -5,8 +5,10 @@ Motion lives here, not on the BLE-shaped App-sim pipe (sim-btd :17432).
 The phone talks JSON-RPC over ws://127.0.0.1:17434:
   robot.stop / robot.do / robot.sound / robot.move {vx, vy, vyaw}
 
-robot.move is the official teleop intent. This twin walks by integrating the
-freejoint and a gait around the home pose — not ONNX. Deadman zeros after 500 ms.
+robot.move is the official teleop intent. The default gait is the shipped
+ONNX walk/stand/sitstand bundle (same 61-D family as robotd), run in this
+MuJoCo world at 50 Hz. Deadman zeros after 500 ms. If the weights or
+onnxruntime are missing, it falls back to kinematic slide.
 
 The GLFW window is the same virtual world as microduck_rl's infer_policy demo:
 scene.xml + robot_allcollisions.xml + Cream STL meshes. The JPEG on :17435 is a
@@ -29,7 +31,12 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
+from gait import load_gait
+
 REPO = Path(__file__).resolve().parents[1]
+CONTROL_DT = 0.02
+DECIMATION = 4
+SIM_TIMESTEP = 0.005
 # Same MJCF infer_policy.py loads for demo inference (cwd-relative there).
 RL_SCENE = Path(os.environ["DUCK_BODY_MJCF"]) if os.environ.get("DUCK_BODY_MJCF") else (
     REPO.parent / "microduck_rl/src/mjlab_microduck/robot/microduck/scene.xml"
@@ -107,6 +114,7 @@ def compile_model():
 class Body:
     def __init__(self):
         self.model = compile_model()
+        self.model.opt.timestep = SIM_TIMESTEP
         self.data = mujoco.MjData(self.model)
         self.lock = threading.Lock()
         self.adr = {}
@@ -129,6 +137,14 @@ class Body:
             self.apply_named(STAND)
             self.data.qpos[0:3] = [0.0, 0.0, 0.12]
             self.data.qpos[3:7] = [1.0, 0.0, 0.0, 0.0]
+        self.gait = load_gait(self.model, self.data)
+        if self.gait is not None:
+            for i, qpos_idx in enumerate(self.gait.joint_qpos_indices):
+                self.data.qpos[qpos_idx] = self.gait.default_pose[i]
+            self.data.ctrl[:] = self.gait.default_pose
+            self.gait.vel_cmd[:] = 0
+            self.gait._update_policy_session()
+            self.gait._update_command()
         mujoco.mj_forward(self.model, self.data)
         self.update_follow_cam()
 
@@ -150,14 +166,25 @@ class Body:
 
     def set_skill(self, skill: str) -> str:
         if skill == "sit_toggle":
-            self.sitting = not self.sitting
             self.stopped = False
             self.twist[:] = 0
+            if self.gait is not None and self.gait.sit_session is not None:
+                self.gait.toggle_sit()
+                self.sitting = bool(self.gait.sit_mode)
+                return "sitting" if self.sitting else "standing"
+            self.sitting = not self.sitting
             self.target = SIT.copy() if self.sitting else STAND.copy()
             return "sitting" if self.sitting else "standing"
         if skill in ("stop",):
             self.stopped = True
             self.twist[:] = 0
+            if self.gait is not None:
+                self.gait.vel_cmd[:] = 0
+                if self.gait.sit_mode:
+                    self.gait.toggle_sit()
+                self.sitting = False
+                self.gait._update_policy_session()
+                self.gait._update_command()
             self.target = np.array(self.read15())
             return "stopped"
         if skill in ("quack", "sound"):
@@ -175,6 +202,9 @@ class Body:
         if self.sitting and (abs(self.twist[0]) + abs(self.twist[1]) + abs(self.twist[2])) > 1e-3:
             self.sitting = False
             self.target = STAND.copy()
+            if self.gait is not None and self.gait.sit_mode:
+                self.gait.sit_mode = False
+                self.gait._update_command()
 
     def update_follow_cam(self):
         x, y, z = float(self.data.qpos[0]), float(self.data.qpos[1]), float(self.data.qpos[2])
@@ -193,41 +223,75 @@ class Body:
         mujoco.mju_mat2Quat(quat, mat)
         self.model.cam_quat[self.cam_id] = quat
 
-    def step(self, dt=0.02):
+    def snapshot(self) -> dict:
+        hip = 0.0
+        if "left_hip_pitch" in self.adr:
+            hip = float(self.data.qpos[self.adr["left_hip_pitch"]])
+        return {
+            "gait": "onnx" if self.gait is not None else "slide",
+            "policy": getattr(self.gait, "current_policy", "slide"),
+            "x": float(self.data.qpos[0]),
+            "y": float(self.data.qpos[1]),
+            "z": float(self.data.qpos[2]),
+            "hip_pitch": hip,
+            "sitting": self.sitting,
+        }
+
+    def step(self, dt=CONTROL_DT):
         with self.lock:
             if self.last_move and (time.time() - self.last_move) > DEADMAN:
                 self.twist[:] = 0
-            vx, vy, vyaw = (float(self.twist[0]), float(self.twist[1]), float(self.twist[2]))
-            moving = (vx * vx + vy * vy + vyaw * vyaw) > 4e-4
-            if moving and not self.stopped:
-                yaw = yaw_of(self.data.qpos)
-                self.data.qpos[0] += (vx * np.cos(yaw) - vy * np.sin(yaw)) * dt
-                self.data.qpos[1] += (vx * np.sin(yaw) + vy * np.cos(yaw)) * dt
-                yaw += vyaw * dt
-                self.data.qpos[3] = np.cos(yaw / 2)
-                self.data.qpos[4] = 0.0
-                self.data.qpos[5] = 0.0
-                self.data.qpos[6] = np.sin(yaw / 2)
-                self.phase += dt * (3.6 + 10.0 * min((vx * vx + vy * vy) ** 0.5, 0.3))
-                swing = 0.32 * np.sin(self.phase)
-                pose = STAND.copy()
-                pose[2] = STAND[2] + swing
-                pose[3] = STAND[3] - 0.55 * swing
-                pose[12] = STAND[12] - swing
-                pose[13] = STAND[13] + 0.55 * swing
-                self.target = pose
-            z_tgt = 0.07 if self.sitting else 0.12
-            self.data.qpos[2] += 0.16 * (z_tgt - self.data.qpos[2])
-            for i, name in enumerate(JOINT_NAMES):
-                if name not in self.adr:
-                    continue
-                cur = self.data.qpos[self.adr[name]]
-                tgt = float(self.target[i])
-                self.data.qpos[self.adr[name]] = cur + 0.22 * (tgt - cur)
-            if time.time() < self.quack_until and "head_pitch" in self.adr:
-                self.data.qpos[self.adr["head_pitch"]] = 0.62
-            mujoco.mj_forward(self.model, self.data)
+            if self.gait is not None:
+                self._step_gait(dt)
+            else:
+                self._step_slide(dt)
             self.update_follow_cam()
+
+    def _step_gait(self, dt):
+        vx, vy, vyaw = (float(self.twist[0]), float(self.twist[1]), float(self.twist[2]))
+        if self.stopped:
+            vx = vy = vyaw = 0.0
+        self.gait.vel_cmd[:] = (vx, vy, vyaw)
+        self.gait._update_policy_session()
+        self.gait._update_command()
+        action = self.gait.infer()
+        self.gait.apply_action(action)
+        if time.time() < self.quack_until and self.gait.n_joints > 6:
+            self.data.ctrl[6] = 0.62
+        for _ in range(DECIMATION):
+            mujoco.mj_step(self.model, self.data)
+
+    def _step_slide(self, dt):
+        vx, vy, vyaw = (float(self.twist[0]), float(self.twist[1]), float(self.twist[2]))
+        moving = (vx * vx + vy * vy + vyaw * vyaw) > 4e-4
+        if moving and not self.stopped:
+            yaw = yaw_of(self.data.qpos)
+            self.data.qpos[0] += (vx * np.cos(yaw) - vy * np.sin(yaw)) * dt
+            self.data.qpos[1] += (vx * np.sin(yaw) + vy * np.cos(yaw)) * dt
+            yaw += vyaw * dt
+            self.data.qpos[3] = np.cos(yaw / 2)
+            self.data.qpos[4] = 0.0
+            self.data.qpos[5] = 0.0
+            self.data.qpos[6] = np.sin(yaw / 2)
+            self.phase += dt * (3.6 + 10.0 * min((vx * vx + vy * vy) ** 0.5, 0.3))
+            swing = 0.32 * np.sin(self.phase)
+            pose = STAND.copy()
+            pose[2] = STAND[2] + swing
+            pose[3] = STAND[3] - 0.55 * swing
+            pose[12] = STAND[12] - swing
+            pose[13] = STAND[13] + 0.55 * swing
+            self.target = pose
+        z_tgt = 0.07 if self.sitting else 0.12
+        self.data.qpos[2] += 0.16 * (z_tgt - self.data.qpos[2])
+        for i, name in enumerate(JOINT_NAMES):
+            if name not in self.adr:
+                continue
+            cur = self.data.qpos[self.adr[name]]
+            tgt = float(self.target[i])
+            self.data.qpos[self.adr[name]] = cur + 0.22 * (tgt - cur)
+        if time.time() < self.quack_until and "head_pitch" in self.adr:
+            self.data.qpos[self.adr["head_pitch"]] = 0.62
+        mujoco.mj_forward(self.model, self.data)
 
 
 BODY = Body()
@@ -293,6 +357,7 @@ class CameraHandler(BaseHTTPRequestHandler):
             self._cors()
             with JPEG["lock"]:
                 has_frame = bool(JPEG["bytes"])
+            snap = BODY.snapshot()
             body = json.dumps(
                 {
                     "ok": True,
@@ -300,6 +365,7 @@ class CameraHandler(BaseHTTPRequestHandler):
                     "sitting": BODY.sitting,
                     "camera": has_frame,
                     "viewer": True,
+                    **snap,
                 }
             ).encode()
             self.send_header("Content-Length", str(len(body)))
@@ -351,7 +417,8 @@ def handle_call(method: str, params: dict, req_id):
     if method == "hello":
         return rpc_result(req_id, {"api_version": 16, "daemon_version": "body-sim", "channel": "lan", "teleop": True})
     if method == "robot.health":
-        return rpc_result(req_id, {"healthy": True, "reason": "mujoco body", "sitting": BODY.sitting})
+        snap = BODY.snapshot()
+        return rpc_result(req_id, {"healthy": True, "reason": "mujoco body", **snap})
     if method == "robot.stop":
         BODY.set_skill("stop")
         return rpc_result(req_id, {"ok": True, "state": "stopped", "channel": "lan"})
@@ -368,12 +435,15 @@ def handle_call(method: str, params: dict, req_id):
     if method == "camera.info":
         with JPEG["lock"]:
             has_frame = bool(JPEG["bytes"])
+        snap = BODY.snapshot()
         return rpc_result(
             req_id,
             {
                 "url": "http://127.0.0.1:17435/camera.mjpeg",
                 "still": "http://127.0.0.1:17435/camera.jpg",
                 "live": has_frame,
+                "gait": snap["gait"],
+                "policy": snap["policy"],
             },
         )
     return rpc_result(req_id, error=f"unknown {method}")

@@ -48,8 +48,8 @@ down() {
 up() {
     down
     mkdir -p "$STATE"
-    python3 -c 'import mujoco,websockets' 2>/dev/null \
-        || die "need python3 packages mujoco and websockets (pip install mujoco websockets pillow)"
+    python3 -c 'import mujoco,websockets,onnxruntime' 2>/dev/null \
+        || die "need python3 packages mujoco websockets onnxruntime (pip install mujoco websockets pillow onnxruntime)"
     extra=""
     py=python3
     if [ "${DUCK_BODY_HEADLESS:-}" = "1" ]; then

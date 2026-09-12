@@ -313,7 +313,7 @@ function drivePanel() {
   return `<div class="drive-card" data-testid="drive-panel">
       <div class="drive-head">
         <p class="title">手动驾驶</p>
-        <p class="sub">在 App 里开。电脑窗口是同一只鸭子。</p>
+        <p class="sub">默认行走模型。按住前进是迈步，不是滑移。</p>
       </div>
       <div class="drive-grid">
         <button type="button" class="drive-hold" data-drive="left" data-testid="drive-left">左转</button>
