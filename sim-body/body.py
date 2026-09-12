@@ -138,6 +138,7 @@ class Body:
         self.phase = 0.0
         self.ticks = 0
         self.locomotion = "walk"
+        self.swap_until = 0.0
         self._init_world("walk")
 
     def _init_world(self, kind: str):
@@ -185,6 +186,7 @@ class Body:
         self.stopped = False
         self.twist[:] = 0
         self.locomotion = "roller" if kind == "rollers" else "walk"
+        self.swap_until = time.time() + 0.25
         return True
 
     def _clear_modes(self, keep_sit: bool = False):
@@ -335,7 +337,9 @@ class Body:
         with self.lock:
             if self.last_move and (time.time() - self.last_move) > DEADMAN:
                 self.twist[:] = 0
-            if self.gait is not None:
+            if time.time() < self.swap_until:
+                mujoco.mj_forward(self.model, self.data)
+            elif self.gait is not None:
                 self._step_gait(dt)
             else:
                 self._step_slide(dt)
@@ -682,19 +686,20 @@ def maybe_viewer(stop: threading.Event):
     except Exception as exc:
         print(f"viewer unavailable: {exc}", flush=True)
         return
+    gen = BODY.generation
+    model, data = BODY.model, BODY.data
+    try:
+        with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
+            print(f"world viewer open — {BODY.body_kind}", flush=True)
+            while viewer.is_running() and not stop.is_set() and BODY.generation == gen:
+                with BODY.lock:
+                    viewer.sync()
+                time.sleep(0.02)
+    except Exception as exc:
+        print(f"viewer failed: {exc}", flush=True)
+    print("world viewer closed (body switch keeps camera/LAN)", flush=True)
     while not stop.is_set():
-        gen = BODY.generation
-        model, data = BODY.model, BODY.data
-        try:
-            with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
-                print(f"world viewer open — {BODY.body_kind}", flush=True)
-                while viewer.is_running() and not stop.is_set() and BODY.generation == gen:
-                    with BODY.lock:
-                        viewer.sync()
-                    time.sleep(0.02)
-        except Exception as exc:
-            print(f"viewer failed: {exc}", flush=True)
-            time.sleep(0.5)
+        time.sleep(0.5)
 
 
 def serve_lan(args, stop: threading.Event):

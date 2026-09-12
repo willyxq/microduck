@@ -127,6 +127,8 @@ def attach(policy, skill: dict) -> bool:
 def attach_all(policy, body_kind: str = "walk") -> list[str]:
     loaded = []
     for skill in load_catalog():
+        if skill.get("body", "walk") != body_kind:
+            continue
         try:
             if attach(policy, skill):
                 loaded.append(skill["id"])
