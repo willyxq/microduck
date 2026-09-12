@@ -384,30 +384,44 @@ function interactView() {
     </div>`;
 }
 
-function readySkills(kind) {
-  return state.skills.filter((s) => s.ready && s.body === "walk" && (!kind || s.kind === kind));
+function readySkills(kind, body) {
+  return state.skills.filter((s) => s.ready && (!body || s.body === body) && (!kind || s.kind === kind));
+}
+
+function skillChip(s) {
+  return `<button class="action ${s.active ? "on" : ""}" data-skill="${s.id}" data-testid="skill-${s.id}">${s.title}</button>`;
 }
 
 function skillActions() {
-  const tricks = readySkills("trick");
-  const locos = readySkills("locomotion");
-  if (!tricks.length && !locos.length) {
+  const locos = readySkills("locomotion", "walk");
+  const tricks = readySkills("trick", "walk");
+  const rollerLocos = readySkills("locomotion", "rollers");
+  const rollerMoves = state.skills.filter((s) => s.ready && s.body === "rollers" && s.kind !== "locomotion");
+  if (!tricks.length && !locos.length && !rollerLocos.length && !rollerMoves.length) {
     return `<p class="sub">更多动作去「模型」下载。点能力，不用选文件。</p>`;
   }
   const loco = locos.length
     ? `<p class="kicker" style="margin:18px 0 8px">步态</p>
       <div class="actions loco">
-        ${locos.map((s) => `<button class="action ${s.active ? "on" : ""}" data-skill="${s.id}" data-testid="skill-${s.id}">${s.title}</button>`).join("")}
+        ${locos.map(skillChip).join("")}
       </div>
       <p class="stick-hint">行走是默认。点奔跑等会换摇杆模型，再点行走切回来。</p>`
-    : ""
+    : "";
   const trick = tricks.length
     ? `<p class="kicker" style="margin:18px 0 8px">动作</p>
       <div class="actions">
-        ${tricks.map((s) => `<button class="action" data-skill="${s.id}" data-testid="skill-${s.id}">${s.title}</button>`).join("")}
+        ${tricks.map(skillChip).join("")}
       </div>`
     : "";
-  return loco + trick;
+  const rollers = rollerLocos.length || rollerMoves.length
+    ? `<p class="kicker" style="margin:18px 0 8px">轮滑</p>
+      <p class="stick-hint">点轮滑会换成带轮机体。点行走会换回脚。</p>
+      <div class="actions loco">
+        ${rollerLocos.map(skillChip).join("")}
+        ${rollerMoves.map(skillChip).join("")}
+      </div>`
+    : "";
+  return loco + trick + rollers;
 }
 
 function modelsView() {
@@ -468,10 +482,12 @@ function capabilityCards() {
       ${btn}
     </div>`;
   };
+  const pending = state.skills.filter((s) => !s.ready && s.available).length;
   return `<p class="kicker" style="margin:18px 0 8px">第二层 · 动作能力</p>
-    <p class="sub">点能力，不点文件。下载后推理模型会自己切。</p>
+    <p class="sub">点能力，不点文件。下载后推理模型会自己切。轮滑会换成带轮机体。</p>
+    ${pending ? `<button class="cta" data-install="all" data-testid="install-all" ${state.busy ? "disabled" : ""}>全部下载并启用</button>` : ""}
     ${walk.map(card).join("")}
-    <p class="kicker" style="margin:18px 0 8px">轮滑机体（当前鸭子没有轮）</p>
+    <p class="kicker" style="margin:18px 0 8px">轮滑机体</p>
     ${rollers.map(card).join("")}`;
 }
 
@@ -783,7 +799,7 @@ root.addEventListener("click", async (ev) => {
       if (!state.lanReady) throw new Error("先开身体孪生，再下载能力");
       await lan.call("skill.install", { id });
       await probeSkills();
-      toast(`已启用「${meta?.title || id}」`);
+      toast(id === "all" ? "已启用全部动作能力" : `已启用「${meta?.title || id}」`);
     });
     return;
   }

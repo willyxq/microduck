@@ -377,7 +377,8 @@ struct InteractView: View {
                 }
                 let locos = model.skills.filter { $0.ready && $0.body == "walk" && $0.kind == "locomotion" }
                 let tricks = model.skills.filter { $0.ready && $0.body == "walk" && $0.kind == "trick" }
-                if locos.isEmpty && tricks.isEmpty {
+                let rollerSkills = model.skills.filter { $0.ready && $0.body == "rollers" }
+                if locos.isEmpty && tricks.isEmpty && rollerSkills.isEmpty {
                     Text("更多动作去「模型」下载。点能力，不用选文件。")
                         .font(.system(size: 14))
                         .foregroundStyle(Palette.muted)
@@ -426,6 +427,35 @@ struct InteractView: View {
                                     .background(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                                     .shadow(color: Color.black.opacity(0.06), radius: 10, y: 6)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("skill-\(skill.id)")
+                        }
+                    }
+                }
+                if !rollerSkills.isEmpty {
+                    Text("轮滑")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                    Text("点轮滑会换成带轮机体。点行走会换回脚。")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Palette.muted)
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(rollerSkills) { skill in
+                            Button {
+                                Task { await model.doSkill(skill.id) }
+                            } label: {
+                                Text(skill.title)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .frame(maxWidth: .infinity, minHeight: 56)
+                                    .background(.white)
+                                    .overlay {
+                                        if skill.active {
+                                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                                .stroke(Palette.teal, lineWidth: 2)
+                                        }
+                                    }
+                                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("skill-\(skill.id)")
@@ -553,9 +583,24 @@ struct ModelsView: View {
                 Text("第二层 · 动作能力")
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
-                Text("点能力，不点文件。下载后推理模型会自己切。")
+                Text("点能力，不点文件。下载后推理模型会自己切。轮滑会换成带轮机体。")
                     .font(.system(size: 14))
                     .foregroundStyle(Palette.muted)
+                if model.skills.contains(where: { !$0.ready && $0.available }) {
+                    Button {
+                        Task { await model.installSkill("all") }
+                    } label: {
+                        Text("全部下载并启用")
+                            .font(.system(size: 17, weight: .bold))
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .foregroundStyle(Color(red: 0.23, green: 0.16, blue: 0))
+                            .background(Palette.duck)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.busy)
+                    .accessibilityIdentifier("install-all")
+                }
                 ForEach(model.skills.filter { $0.body == "walk" }) { skill in
                     skillCard(skill)
                 }

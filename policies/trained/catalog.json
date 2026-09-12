@@ -120,7 +120,7 @@
     {
       "id": "roller",
       "title": "轮滑走",
-      "blurb": "脚底带轮的速度跟踪。当前机体没有轮子。",
+      "blurb": "脚底带轮的速度跟踪。点它会换成带轮机体。",
       "kind": "locomotion",
       "body": "rollers",
       "file": "roller.onnx",

@@ -32,16 +32,25 @@ import mujoco
 import numpy as np
 
 from gait import load_gait
-from skills import attach, describe, install as install_skill, load_catalog, set_locomotion
+from skills import (
+    attach,
+    describe,
+    install as install_skill,
+    install_all as install_all_skills,
+    load_catalog,
+    lookup,
+    set_locomotion,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 CONTROL_DT = 0.02
 DECIMATION = 4
 SIM_TIMESTEP = 0.005
-# Same MJCF infer_policy.py loads for demo inference (cwd-relative there).
-RL_SCENE = Path(os.environ["DUCK_BODY_MJCF"]) if os.environ.get("DUCK_BODY_MJCF") else (
-    REPO.parent / "microduck_rl/src/mjlab_microduck/robot/microduck/scene.xml"
-)
+RL_DIR = REPO.parent / "microduck_rl/src/mjlab_microduck/robot/microduck"
+SCENES = {
+    "walk": Path(os.environ["DUCK_BODY_MJCF"]) if os.environ.get("DUCK_BODY_MJCF") else RL_DIR / "scene.xml",
+    "rollers": RL_DIR / "scene_rollers.xml",
+}
 FALLBACK_MJCF = REPO / "kinematics/assets/alpha/robot_walk.xml"
 
 JOINT_NAMES = [
@@ -89,11 +98,13 @@ def yaw_of(qpos) -> float:
     return float(np.arctan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz)))
 
 
-def compile_model():
-    mjcf = RL_SCENE if RL_SCENE.exists() else FALLBACK_MJCF
+def compile_model(kind: str = "walk"):
+    mjcf = SCENES.get(kind) if SCENES.get(kind) and SCENES[kind].exists() else None
+    if mjcf is None:
+        mjcf = FALLBACK_MJCF
     if not mjcf.exists():
-        raise FileNotFoundError(f"no MicroDuck MJCF at {RL_SCENE} or {FALLBACK_MJCF}")
-    print(f"body-sim mesh {mjcf}", flush=True)
+        raise FileNotFoundError(f"no MicroDuck MJCF for {kind} at {SCENES.get(kind)} or {FALLBACK_MJCF}")
+    print(f"body-sim mesh {kind} {mjcf}", flush=True)
     spec = mujoco.MjSpec.from_file(str(mjcf))
     cam_pos = [0.32, -0.28, 0.20]
     spec.worldbody.add_camera(
@@ -114,16 +125,9 @@ def compile_model():
 
 class Body:
     def __init__(self):
-        self.model = compile_model()
-        self.model.opt.timestep = SIM_TIMESTEP
-        self.data = mujoco.MjData(self.model)
         self.lock = threading.Lock()
-        self.adr = {}
-        for name in JOINT_NAMES:
-            jid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)
-            if jid >= 0:
-                self.adr[name] = self.model.jnt_qposadr[jid]
-        self.cam_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, "app_cam")
+        self.generation = 0
+        self.body_kind = "walk"
         self.sitting = False
         self.target = STAND.copy()
         self.stopped = False
@@ -133,6 +137,19 @@ class Body:
         self.phase = 0.0
         self.ticks = 0
         self.locomotion = "walk"
+        self._init_world("walk")
+
+    def _init_world(self, kind: str):
+        self.model = compile_model(kind)
+        self.model.opt.timestep = SIM_TIMESTEP
+        self.data = mujoco.MjData(self.model)
+        self.body_kind = kind
+        self.adr = {}
+        for name in JOINT_NAMES:
+            jid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)
+            if jid >= 0:
+                self.adr[name] = self.model.jnt_qposadr[jid]
+        self.cam_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, "app_cam")
         kid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_KEY, "STAND")
         if kid >= 0:
             mujoco.mj_resetDataKeyframe(self.model, self.data, kid)
@@ -140,16 +157,31 @@ class Body:
             self.apply_named(STAND)
             self.data.qpos[0:3] = [0.0, 0.0, 0.12]
             self.data.qpos[3:7] = [1.0, 0.0, 0.0, 0.0]
-        self.gait = load_gait(self.model, self.data)
+        self.gait = load_gait(self.model, self.data, body_kind=kind)
         if self.gait is not None:
-            for i, qpos_idx in enumerate(self.gait.joint_qpos_indices):
+            nctrl = min(len(self.gait.default_pose), self.model.nu)
+            for i, qpos_idx in enumerate(self.gait.joint_qpos_indices[:nctrl]):
                 self.data.qpos[qpos_idx] = self.gait.default_pose[i]
-            self.data.ctrl[:] = self.gait.default_pose
+            self.data.ctrl[:nctrl] = self.gait.default_pose[:nctrl]
             self.gait.vel_cmd[:] = 0
             self.gait._update_policy_session()
             self.gait._update_command()
         mujoco.mj_forward(self.model, self.data)
         self.update_follow_cam()
+
+    def ensure_body(self, kind: str) -> bool:
+        if kind not in SCENES:
+            raise ValueError(f"没有这种机体：{kind}")
+        if self.body_kind == kind:
+            return False
+        print(f"body-sim switch {self.body_kind} → {kind}", flush=True)
+        self._init_world(kind)
+        self.generation += 1
+        self.sitting = False
+        self.stopped = False
+        self.twist[:] = 0
+        self.locomotion = "roller" if kind == "rollers" else "walk"
+        return True
 
     def apply_named(self, pose):
         for i, name in enumerate(JOINT_NAMES):
@@ -168,6 +200,10 @@ class Body:
         self.apply_named(self.target)
 
     def set_skill(self, skill: str) -> str:
+        with self.lock:
+            return self._set_skill_locked(skill)
+
+    def _set_skill_locked(self, skill: str) -> str:
         if skill == "sit_toggle":
             self.stopped = False
             self.twist[:] = 0
@@ -194,8 +230,17 @@ class Body:
             self.stopped = False
             self.quack_until = time.time() + 0.35
             return "quack"
+        spec = lookup(skill)
+        if spec is not None:
+            self.ensure_body(spec.get("body") or "walk")
         if self.gait is None:
             raise ValueError("还没有步态模型")
+        if skill in ("sitstand", "roller_crouch"):
+            self.stopped = False
+            self.twist[:] = 0
+            self.gait.toggle_sit()
+            self.sitting = bool(self.gait.sit_mode)
+            return "sitting" if self.sitting else "standing"
         if skill == "pick":
             if self.gait.ground_pick_session is None:
                 raise ValueError("先到模型页下载「低头捡」")
@@ -210,11 +255,7 @@ class Body:
             self.locomotion = set_locomotion(self.gait, skill)
             self.stopped = False
             return self.locomotion
-        catalog = {s["id"]: s for s in load_catalog()}
-        if skill in catalog:
-            spec = catalog[skill]
-            if spec.get("body") != "walk":
-                raise ValueError(f"「{spec['title']}」需要轮滑机体，现在这只鸭子没有轮")
+        if spec is not None:
             raise ValueError(f"先到模型页下载「{spec['title']}」")
         raise ValueError(f"不会这个动作：{skill}")
 
@@ -262,6 +303,7 @@ class Body:
             "sitting": self.sitting,
             "ticks": self.ticks,
             "locomotion": self.locomotion,
+            "body": self.body_kind,
         }
 
     def step(self, dt=CONTROL_DT):
@@ -342,7 +384,15 @@ def physics_loop(stop: threading.Event):
 
 def render_loop(stop: threading.Event, width=480, height=320):
     renderer = mujoco.Renderer(BODY.model, height=height, width=width)
+    gen = BODY.generation
     while not stop.is_set():
+        if BODY.generation != gen:
+            try:
+                renderer.close()
+            except Exception:
+                pass
+            renderer = mujoco.Renderer(BODY.model, height=height, width=width)
+            gen = BODY.generation
         with BODY.lock:
             renderer.update_scene(BODY.data, camera="app_cam")
         frame = renderer.render().copy()
@@ -466,18 +516,31 @@ def handle_call(method: str, params: dict, req_id):
             return rpc_result(req_id, error=str(exc))
         return rpc_result(req_id, {"ok": True, "skill": skill, "state": state, "channel": "lan"})
     if method == "skill.list":
-        return rpc_result(req_id, {"skills": describe(BODY.locomotion), "locomotion": BODY.locomotion})
+        return rpc_result(
+            req_id,
+            {
+                "skills": describe(BODY.locomotion, BODY.body_kind),
+                "locomotion": BODY.locomotion,
+                "body": BODY.body_kind,
+            },
+        )
     if method == "skill.install":
         skill_id = params.get("id") or params.get("skill") or ""
         try:
-            info = install_skill(skill_id)
-            skill = next((s for s in load_catalog() if s["id"] == skill_id), None)
-            if BODY.gait is not None and skill is not None:
+            if skill_id in ("all", "*", "全部"):
+                infos = install_all_skills()
+                info = {"id": "all", "installed": True, "count": len(infos)}
+                skills = load_catalog()
+            else:
+                info = install_skill(skill_id)
+                skills = [s for s in load_catalog() if s["id"] == skill_id]
+            if BODY.gait is not None:
                 with BODY.lock:
-                    attach(BODY.gait, skill)
+                    for skill in skills:
+                        attach(BODY.gait, skill)
         except (ValueError, FileNotFoundError) as exc:
             return rpc_result(req_id, error=str(exc))
-        return rpc_result(req_id, {"ok": True, **info, "skills": describe(BODY.locomotion)})
+        return rpc_result(req_id, {"ok": True, **info, "skills": describe(BODY.locomotion, BODY.body_kind)})
     if method == "robot.sound":
         BODY.set_skill("quack")
         return rpc_result(req_id, {"ok": True, "channel": "lan"})
@@ -587,12 +650,19 @@ def maybe_viewer(stop: threading.Event):
     except Exception as exc:
         print(f"viewer unavailable: {exc}", flush=True)
         return
-    with mujoco.viewer.launch_passive(BODY.model, BODY.data, show_left_ui=False, show_right_ui=False) as viewer:
-        print("world viewer open — infer_policy scene.xml", flush=True)
-        while viewer.is_running() and not stop.is_set():
-            with BODY.lock:
-                viewer.sync()
-            time.sleep(0.02)
+    while not stop.is_set():
+        gen = BODY.generation
+        model, data = BODY.model, BODY.data
+        try:
+            with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
+                print(f"world viewer open — {BODY.body_kind}", flush=True)
+                while viewer.is_running() and not stop.is_set() and BODY.generation == gen:
+                    with BODY.lock:
+                        viewer.sync()
+                    time.sleep(0.02)
+        except Exception as exc:
+            print(f"viewer failed: {exc}", flush=True)
+            time.sleep(0.5)
 
 
 def serve_lan(args, stop: threading.Event):

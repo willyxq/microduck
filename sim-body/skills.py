@@ -25,6 +25,10 @@ def load_catalog() -> list[dict]:
     return list(raw.get("skills") or [])
 
 
+def lookup(skill_id: str) -> dict | None:
+    return next((s for s in load_catalog() if s["id"] == skill_id), None)
+
+
 def _builtin(skill: dict) -> Path | None:
     rel = skill.get("builtin")
     if not rel:
@@ -45,7 +49,7 @@ def _installed(skill: dict) -> Path | None:
     return _builtin(skill)
 
 
-def describe(locomotion: str = "walk") -> list[dict]:
+def describe(locomotion: str = "walk", body_kind: str = "walk") -> list[dict]:
     out = []
     for skill in load_catalog():
         installed = _installed(skill)
@@ -57,19 +61,20 @@ def describe(locomotion: str = "walk") -> list[dict]:
                 "blurb": skill["blurb"],
                 "kind": skill["kind"],
                 "body": skill["body"],
-                "ready": skill["body"] == "walk" and installed is not None,
+                "ready": installed is not None,
                 "installed": installed is not None,
                 "available": available is not None or installed is not None,
                 "active": skill["id"] == locomotion,
                 "bytes": (available or installed).stat().st_size if (available or installed) else 0,
                 "source": skill.get("run") or "",
+                "current_body": body_kind,
             }
         )
     return out
 
 
 def install(skill_id: str) -> dict:
-    skill = next((s for s in load_catalog() if s["id"] == skill_id), None)
+    skill = lookup(skill_id)
     if skill is None:
         raise ValueError(f"没有这个能力：{skill_id}")
     src = _available(skill) or _builtin(skill)
@@ -82,6 +87,10 @@ def install(skill_id: str) -> dict:
     return {"id": skill_id, "installed": True, "path": str(dest)}
 
 
+def install_all() -> list[dict]:
+    return [install(skill["id"]) for skill in load_catalog()]
+
+
 def attach(policy, skill: dict) -> bool:
     """Load one installed skill onto an existing PolicyInference. Return True if loaded."""
     path = _installed(skill)
@@ -89,9 +98,14 @@ def attach(policy, skill: dict) -> bool:
         return False
     session = ort.InferenceSession(str(path))
     sid = skill["id"]
+    if not hasattr(policy, "locomotion_sessions"):
+        policy.locomotion_sessions = {}
     if sid == "sitstand":
         policy.sit_session = session
         policy.is_sitstand = True
+        return True
+    if sid == "roller_crouch":
+        policy.crouch_session = session
         return True
     if sid == "pick":
         policy.ground_pick_session = session
@@ -100,21 +114,19 @@ def attach(policy, skill: dict) -> bool:
         policy.behavior_sessions[sid] = session
         policy.behavior_durations[sid] = float(skill.get("duration") or 3.0)
         return True
-    if skill["kind"] == "locomotion" and skill["body"] == "walk":
-        if not hasattr(policy, "locomotion_sessions"):
-            policy.locomotion_sessions = {}
+    if skill["kind"] == "locomotion":
         policy.locomotion_sessions[sid] = session
-        if sid == "walk":
-            policy.walking_session = session
+        return True
+    if skill["kind"] == "pose":
+        policy.behavior_sessions[sid] = session
+        policy.behavior_durations[sid] = float(skill.get("duration") or 3.0)
         return True
     return False
 
 
-def attach_all(policy) -> list[str]:
+def attach_all(policy, body_kind: str = "walk") -> list[str]:
     loaded = []
     for skill in load_catalog():
-        if skill.get("body") != "walk":
-            continue
         try:
             if attach(policy, skill):
                 loaded.append(skill["id"])
@@ -124,7 +136,16 @@ def attach_all(policy) -> list[str]:
         policy.locomotion_sessions = {}
     if policy.walking_session is not None:
         policy.locomotion_sessions.setdefault("walk", policy.walking_session)
-    print(f"skills attached: {', '.join(loaded) or 'none'}", flush=True)
+    default = "roller" if body_kind == "rollers" else "walk"
+    session = policy.locomotion_sessions.get(default)
+    if session is not None:
+        policy.walking_session = session
+        policy.ort_session = session
+        policy.current_policy = "walking"
+    if body_kind == "rollers" and getattr(policy, "crouch_session", None) is not None:
+        policy.sit_session = policy.crouch_session
+        policy.is_sitstand = True
+    print(f"skills attached ({body_kind}): {', '.join(loaded) or 'none'}", flush=True)
     return loaded
 
 

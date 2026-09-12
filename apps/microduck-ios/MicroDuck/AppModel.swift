@@ -339,7 +339,7 @@ final class AppModel: ObservableObject {
             _ = try await lan.call("skill.install", params: ["id": id])
             await probeSkills()
             let title = skills.first(where: { $0.id == id })?.title ?? id
-            showToast("已启用「\(title)」")
+            showToast(id == "all" ? "已启用全部动作能力" : "已启用「\(title)」")
         } catch {
             showToast(error.localizedDescription)
         }

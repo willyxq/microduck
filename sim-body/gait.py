@@ -22,9 +22,17 @@ def default_paths() -> dict[str, Path]:
     }
 
 
-def load_gait(model, data):
+def load_gait(model, data, body_kind: str = "walk"):
     """Return a PolicyInference or None if the bundle cannot be loaded."""
     paths = default_paths()
+    if body_kind == "rollers":
+        from skills import INSTALLED, AVAILABLE
+
+        roller = INSTALLED / "roller.onnx"
+        if not roller.exists():
+            roller = AVAILABLE / "roller.onnx"
+        if roller.exists():
+            paths["walk"] = roller
     if not paths["walk"].exists():
         print(f"gait skipped: no walk policy at {paths['walk']}", flush=True)
         return None
@@ -41,16 +49,16 @@ def load_gait(model, data):
         "new_cmd_obs": True,
         "use_projected_gravity": True,
     }
-    if paths["stand"].exists():
+    if paths["stand"].exists() and body_kind != "rollers":
         kwargs["standing_onnx_path"] = str(paths["stand"])
-    if paths["sitstand"].exists():
+    if paths["sitstand"].exists() and body_kind != "rollers":
         kwargs["sitstand_onnx_path"] = str(paths["sitstand"])
     policy = PolicyInference(model, data, **kwargs)
     from skills import attach_all
 
-    attach_all(policy)
+    attach_all(policy, body_kind=body_kind)
     print(
-        f"gait onnx walk={paths['walk'].name} stand={paths['stand'].name if paths['stand'].exists() else '-'} "
+        f"gait onnx body={body_kind} walk={paths['walk'].name} stand={paths['stand'].name if paths['stand'].exists() else '-'} "
         f"sitstand={paths['sitstand'].name if paths['sitstand'].exists() else '-'}",
         flush=True,
     )
