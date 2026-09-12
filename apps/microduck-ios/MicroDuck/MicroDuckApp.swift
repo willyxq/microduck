@@ -8,7 +8,10 @@ struct MicroDuckApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(model)
-                .onAppear { TapBridge.start() }
+                .onAppear {
+                    HarnessTarget.model = model
+                    TapBridge.start()
+                }
         }
     }
 }

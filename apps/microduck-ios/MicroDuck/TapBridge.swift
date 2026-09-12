@@ -75,7 +75,14 @@ enum TapBridge {
         do {
             switch (method, path) {
             case (_, "/health"):
-                return json(200, ["ok": true, "bridge": "microduck-tap", "port": Int(port)])
+                let screen = HarnessTarget.model.map { String(describing: $0.screen) } ?? "nil"
+                return json(200, [
+                    "ok": true,
+                    "bridge": "microduck-tap",
+                    "port": Int(port),
+                    "hasModel": HarnessTarget.model != nil,
+                    "screen": screen,
+                ])
             case (_, "/elements"):
                 return json(200, ["elements": dumpElements()])
             case (_, "/tap"):

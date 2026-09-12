@@ -69,6 +69,7 @@ sleep 0.6
 shot discover
 
 tap duck-sim
+sleep 0.6
 shot pin
 
 tap pin-input
