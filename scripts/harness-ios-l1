@@ -19,7 +19,7 @@ print(next(x["udid"] for xs in d.values() for x in xs if x.get("state")=="Booted
 mkdir -p "$OUT"
 
 need_bridge() {
-    curl -sfS --max-time 2 "$BRIDGE/health" >/dev/null
+    curl -sfS --max-time 2 "$BRIDGE/health" >/dev/null 2>&1
 }
 
 if ! need_bridge; then
