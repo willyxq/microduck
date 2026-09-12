@@ -315,6 +315,10 @@ function drivePanel() {
         <p class="title">手动驾驶</p>
         <p class="sub">默认行走模型。按住前进是迈步，不是滑移。</p>
       </div>
+      <div class="drive-holds">
+        <button type="button" class="drive-hold primary" data-drive="fwd" data-testid="drive-fwd">按住前进</button>
+        <button type="button" class="drive-hold" data-drive="back" data-testid="drive-back">后退</button>
+      </div>
       <div class="drive-grid">
         <button type="button" class="drive-hold" data-drive="left" data-testid="drive-left">左转</button>
         <div class="stick-pad" data-testid="stick-drive">
@@ -325,10 +329,6 @@ function drivePanel() {
           <div class="stick-knob" data-testid="stick-knob"></div>
         </div>
         <button type="button" class="drive-hold" data-drive="right" data-testid="drive-right">右转</button>
-      </div>
-      <div class="drive-holds">
-        <button type="button" class="drive-hold primary" data-drive="fwd" data-testid="drive-fwd">按住前进</button>
-        <button type="button" class="drive-hold" data-drive="back" data-testid="drive-back">后退</button>
       </div>
       <p class="stick-hint">点住方向或拖摇杆 · 松手即停 · 不经 BLE</p>
     </div>`;

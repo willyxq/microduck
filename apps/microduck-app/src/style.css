@@ -229,7 +229,7 @@ h2 { font-size: 28px; }
   display: grid;
   grid-template-columns: 1.5fr 1fr;
   gap: 8px;
-  margin-top: 12px;
+  margin: 0 0 12px;
 }
 .drive-hold {
   min-height: 52px;

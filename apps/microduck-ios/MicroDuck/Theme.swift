@@ -230,20 +230,20 @@ struct DrivePanel: View {
                 .font(.system(size: 14))
                 .foregroundStyle(Palette.muted)
             HStack(spacing: 8) {
+                DriveHold(title: "按住前进", testID: "drive-fwd", primary: true) {
+                    model.holdDrive(dir: "drive-fwd", vx: 0.3, vyaw: 0)
+                }
+                DriveHold(title: "后退", testID: "drive-back") {
+                    model.holdDrive(dir: "drive-back", vx: -0.3, vyaw: 0)
+                }
+            }
+            HStack(spacing: 8) {
                 DriveHold(title: "左转", testID: "drive-left") {
                     model.holdDrive(dir: "drive-left", vx: 0, vyaw: 1.5)
                 }
                 DriveStick()
                 DriveHold(title: "右转", testID: "drive-right") {
                     model.holdDrive(dir: "drive-right", vx: 0, vyaw: -1.5)
-                }
-            }
-            HStack(spacing: 8) {
-                DriveHold(title: "按住前进", testID: "drive-fwd", primary: true) {
-                    model.holdDrive(dir: "drive-fwd", vx: 0.3, vyaw: 0)
-                }
-                DriveHold(title: "后退", testID: "drive-back") {
-                    model.holdDrive(dir: "drive-back", vx: -0.3, vyaw: 0)
                 }
             }
             Text("点住方向或拖摇杆 · 松手即停 · 不经 BLE")
