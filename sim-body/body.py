@@ -210,9 +210,12 @@ class Body:
             self.locomotion = set_locomotion(self.gait, skill)
             self.stopped = False
             return self.locomotion
-        catalog = {s["id"]: s["title"] for s in load_catalog()}
+        catalog = {s["id"]: s for s in load_catalog()}
         if skill in catalog:
-            raise ValueError(f"先到模型页下载「{catalog[skill]}」")
+            spec = catalog[skill]
+            if spec.get("body") != "walk":
+                raise ValueError(f"「{spec['title']}」需要轮滑机体，现在这只鸭子没有轮")
+            raise ValueError(f"先到模型页下载「{spec['title']}」")
         raise ValueError(f"不会这个动作：{skill}")
 
     def set_twist(self, vx, vy, vyaw):
