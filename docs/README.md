@@ -67,5 +67,7 @@ thinking is not lost and does not get mistaken for a decision.
 | | |
 |---|---|
 | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | Building, testing, repo layout, conventions, releasing. |
+| [`app-demo/HANDOFF.md`](app-demo/HANDOFF.md) | App design freeze. Continue from `app-checkpoint-2026-09-12`. |
+| [`app-demo/DEV-ENVIRONMENT.md`](app-demo/DEV-ENVIRONMENT.md) | Mac app environment, harness, and how to work without a real duck. |
 | [`project/npu-bringup.md`](project/npu-bringup.md) | The duck detector on the RK3566's NPU: what runs, how to benchmark it, and the frame path that is still missing. |
 | [`../deploy/README.md`](../deploy/README.md) | What a robot image is configured with, and what provisioning actually does. |

@@ -1,0 +1,46 @@
+name: "L1: connect the simulated duck"
+url: http://127.0.0.1:5173
+timeout: 60000
+viewport:
+  width: 390
+  height: 844
+
+# App-sim must already be up (scripts/duck-app-sim up).
+# Transport is sim — iOS Simulator has no BLE.
+
+steps:
+  - perceive:
+      wait_for_text: "duck-sim"
+      timeout: 20000
+      assert:
+        - text_contains: "duck-sim"
+        - no_console_errors: true
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='duck-sim']"
+        - action: wait
+          ms: 500
+
+  - perceive:
+      wait_for_text: "PIN"
+      assert:
+        - text_contains: "PIN"
+
+  - interact:
+      actions:
+        - action: type
+          selector: "[data-testid='pin-input']"
+          text: "000000"
+        - action: click
+          selector: "[data-testid='pin-submit']"
+        - action: wait
+          ms: 1000
+
+  - perceive:
+      wait_for_text: "duck-sim"
+      assert:
+        - text_contains: "duck-sim"
+        - text_not_contains: "手柄"
+        - no_console_errors: true

@@ -65,32 +65,38 @@ git switch --detach app-checkpoint-2026-09-12
 
 Ubuntu 这台机器只适合改文档和出图。iOS 真机、Xcode、签名、CoreBluetooth 必须在 Mac 上做。
 
-推荐顺序，不要先搭完整 UI：
+**现在没有真鸭子。** 开发环境和虚拟鸭子方案见：
 
-1. 在 Mac 检出上面的标签，单独开 App 仓库或本仓库子目录，例如 `apps/microduck-ios`。App 发商店的节奏和机器人 daemon 不同，原作者建议最终独立成库。
-2. 先做**真机 BLE 探针**，不做页面：扫描（不要用 service filter）、连接、`hello`、认证、`system.info`。iPhone 和以后的 Android 都要跑。
-3. 协议复用 `duck-ipc-proto` 和 `btd` 的组帧。原作者因此倾向 Tauri 2 + Rust。如果第一枪用原生 Swift，也必须按同一套 JSON-RPC 说话，不能发明新命令。
-4. 探针通过后，再做第一层：发现、PIN、配网、健康、模型检查/更新/回退。视觉以线上三层画廊的 L1 为准。
-5. 互动页先做：摄像头、立即停止、坐下/站起、叫一声。摇杆保持禁用，直到 `teleop` 通道存在。
-6. WebRTC 控制属于第一层之后的能力，且只能走局域网，不能退化到 BLE。
+- [`DEV-ENVIRONMENT.md`](DEV-ENVIRONMENT.md) — 机器、工具链、harness、工程形态
+- [`SIM-DUCK.md`](SIM-DUCK.md) — App-sim 协议孪生，以及怎么切到真机
+- [`harness/`](harness/) — L1 自动验收场景
+
+推荐顺序，不要先搭完整 UI，也不要空等真鸭子：
+
+1. 在 Mac 从本标签切新分支。App 工程放 `apps/microduck-app` 或独立仓库。
+2. 先做 **App-sim**（真 daemon + WebSocket 网关），再做探针：`hello` / `authenticate` / `system.info`。这就是原来的 BLE 探针，传输先用 sim。
+3. 协议复用 `duck-ipc-proto` 和 `btd` 的组帧。原作者因此倾向 Tauri 2 + Rust。
+4. L1 页面用本机 `~/Workspace/harness/harness` 自动截图验收。iOS Simulator 没有蓝牙。
+5. 真鸭子到了只设 `MICRODUCK_TRANSPORT=ble`，不要另写一套 API。
+6. 互动页先做摄像头、立即停止、坐下/站起、叫一声。摇杆保持禁用。WebRTC 不能退化到 BLE。
 
 Mac 最小工具：
 
-- Xcode + 真机 iPhone
-- 一只已刷好、能广播 BLE 的 MicroDuck
-- Rust（若走 Tauri / 复用协议 crate）
+- Xcode；真机 iPhone 用于以后的 BLE，不是现在的阻塞项
+- Rust、Node；harness 在 `~/Workspace/harness/harness`
+- App-sim（待实现），代替还没到的真鸭子
 - 本仓库作为 git 依赖，用来引用 `duck-ipc-proto`
 
-不要在 Ubuntu 上继续写 iOS 工程，也不要等额度恢复后再重新设计信息架构。
+不要在 Ubuntu 上继续写 iOS 工程，也不要重做信息架构。
 
 ## 5. 额度恢复后的续做提示
 
 给下一个 Agent 的第一句话可以是：
 
-> 从 `app-checkpoint-2026-09-12` 继续 MicroDuck App。先读 `docs/app-demo/HANDOFF.md`。不要重做三层产品设计。下一件事实机 BLE 探针：scan / connect / hello / authenticate / system.info。产品目标是第一层现场管理员，不是手机手柄。
+> 从 `app-checkpoint-2026-09-12` 继续 MicroDuck App。先读 `docs/app-demo/HANDOFF.md` 和 `docs/app-demo/DEV-ENVIRONMENT.md`。不要重做三层产品设计。没有真鸭子：先实现 App-sim，再打 hello / authenticate / system.info。产品目标是第一层现场管理员，不是手机手柄。
 
 如果要 fork：
 
 ```bash
-git checkout -b app-l1-ble-spike app-checkpoint-2026-09-12
+git checkout -b app-l1-sim-spike app-checkpoint-2026-09-12
 ```

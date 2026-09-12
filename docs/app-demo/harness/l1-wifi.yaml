@@ -1,0 +1,34 @@
+name: "L1: provision SimCafe over the protocol twin"
+url: http://127.0.0.1:5173
+timeout: 60000
+viewport:
+  width: 390
+  height: 844
+
+# FakeNet contract: SimCafe + password "correct" joins;
+# any other password is BadKey. App must say it is the password,
+# not a generic failure.
+
+steps:
+  - perceive:
+      wait_for_text: "设置"
+      assert:
+        - text_contains: "设置"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='nav-settings']"
+        - action: wait
+          ms: 400
+        - action: click
+          selector: "[data-testid='wifi']"
+        - action: wait
+          ms: 800
+
+  - perceive:
+      wait_for_text: "SimCafe"
+      assert:
+        - text_contains: "SimCafe"
+        - text_contains: "SimOffice"
+        - no_console_errors: true
