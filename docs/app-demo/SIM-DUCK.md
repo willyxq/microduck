@@ -108,10 +108,14 @@ scripts/duck-app-sim probe
 # 2. L1 web 面（开发构建默认 sim；还不是商店包）
 cd apps/microduck-app && npm run dev
 
-# 3. 自动看页面
+# 3. 自动看页面（web）
 cd ~/Workspace/harness/harness
 npx tsx src/cli.ts scenario \
   /Users/william/Workspace/e1901/microduck/microduck/docs/app-demo/harness/l1-home.yaml
+
+# 4. iOS 模拟器真点击（App 内 127.0.0.1:17433，不点 Simulator 窗口）
+scripts/sim-tap health
+scripts/harness-ios-l1
 ```
 
 探针（没 UI 也能跑，对应原 HANDOFF 的下一枪）：

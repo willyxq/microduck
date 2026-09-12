@@ -12,6 +12,7 @@
 		A10000000000000000000003 /* DuckRpc.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* DuckRpc.swift */; };
 		A10000000000000000000004 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Theme.swift */; };
 		A10000000000000000000005 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* RootView.swift */; };
+		A10000000000000000000007 /* TapBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* TapBridge.swift */; };
 		A10000000000000000000006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* Assets.xcassets */; };
 		B10000000000000000000001 /* ConnectSimTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* ConnectSimTests.swift */; };
 /* End PBXBuildFile section */
@@ -22,6 +23,7 @@
 		A20000000000000000000003 /* DuckRpc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuckRpc.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A20000000000000000000005 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A20000000000000000000008 /* TapBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapBridge.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A30000000000000000000001 /* MicroDuck.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MicroDuck.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -64,6 +66,7 @@
 				A20000000000000000000003 /* DuckRpc.swift */,
 				A20000000000000000000004 /* Theme.swift */,
 				A20000000000000000000005 /* RootView.swift */,
+				A20000000000000000000008 /* TapBridge.swift */,
 				A20000000000000000000006 /* Assets.xcassets */,
 				A20000000000000000000007 /* Info.plist */,
 			);
@@ -187,6 +190,7 @@
 				A10000000000000000000003 /* DuckRpc.swift in Sources */,
 				A10000000000000000000004 /* Theme.swift in Sources */,
 				A10000000000000000000005 /* RootView.swift in Sources */,
+				A10000000000000000000007 /* TapBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -323,8 +323,8 @@ struct InteractView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
                 HStack(spacing: 12) {
-                    action("坐下 / 站起")
-                    action("叫一声")
+                    action("坐下 / 站起", id: "sit")
+                    action("叫一声", id: "quack")
                 }
                 Text("手动驾驶 · 调试能力")
                     .font(.system(size: 12))
@@ -346,7 +346,7 @@ struct InteractView: View {
         }
     }
 
-    private func action(_ title: String) -> some View {
+    private func action(_ title: String, id: String) -> some View {
         Button {
             model.refuseMotion("坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。")
         } label: {
@@ -358,6 +358,7 @@ struct InteractView: View {
                 .shadow(color: Color.black.opacity(0.06), radius: 10, y: 6)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
     }
 }
 

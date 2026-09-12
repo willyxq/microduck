@@ -1,0 +1,113 @@
+#!/bin/sh
+# Click the L1 iOS app through discover → PIN → home / stop / sit / BadKey.
+# Uses the in-app tap bridge (127.0.0.1:17433). Prefers harness ios interact
+# when ~/Workspace/harness/harness is present; otherwise scripts/sim-tap.
+#
+#   scripts/duck-app-sim up
+#   # install / launch garden.pollen.microduck in the Simulator
+#   scripts/harness-ios-l1 [out-dir]
+
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+HARNESS="${HARNESS:-$HOME/Workspace/harness/harness}"
+DEVICE="${HARNESS_IOS_DEVICE:-iPhone 17 Pro Max}"
+OUT="${1:-$ROOT/docs/app-demo/captures/ios-harness-clicks}"
+BRIDGE="${MICRODUCK_TAP_BRIDGE:-http://127.0.0.1:17433}"
+UDID=$(xcrun simctl list devices booted -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"];
+print(next(x["udid"] for xs in d.values() for x in xs if x.get("state")=="Booted"))')
+
+mkdir -p "$OUT"
+
+need_bridge() {
+    curl -sfS --max-time 2 "$BRIDGE/health" >/dev/null
+}
+
+if ! need_bridge; then
+    echo "tap bridge down at $BRIDGE — launch MicroDuck in the Simulator first" >&2
+    exit 1
+fi
+
+step=0
+shot() {
+    name="$1"
+    step=$((step + 1))
+    file=$(printf '%s/%02d-%s.png' "$OUT" "$step" "$name")
+    xcrun simctl io "$UDID" screenshot "$file" >/dev/null
+    echo "$file"
+}
+
+if [ -d "$HARNESS/src" ]; then
+    interact() {
+        label="$1"
+        actions="$2"
+        tmp="/tmp/harness/ios-l1-$label"
+        (cd "$HARNESS" && npx tsx src/cli.ts ios interact --device "$DEVICE" --actions "$actions" --out "$tmp")
+    }
+    tap() {
+        interact "tap-$1" "[{\"action\":\"tap\",\"x\":0,\"y\":0,\"id\":\"$1\"},{\"action\":\"wait\",\"ms\":400}]"
+    }
+    type_text() {
+        interact "type" "[{\"action\":\"type\",\"text\":\"$1\"},{\"action\":\"wait\",\"ms\":200}]"
+    }
+    echo "using harness ios interact + tap bridge"
+else
+    tap() { "$ROOT/scripts/sim-tap" id "$1" >/dev/null; sleep 0.4; }
+    type_text() { "$ROOT/scripts/sim-tap" type "$1" >/dev/null; sleep 0.2; }
+    echo "using scripts/sim-tap (harness not found at $HARNESS)"
+fi
+
+xcrun simctl terminate "$UDID" garden.pollen.microduck 2>/dev/null || true
+xcrun simctl launch "$UDID" garden.pollen.microduck >/dev/null
+i=0
+while [ "$i" -lt 30 ]; do
+    need_bridge && break
+    i=$((i + 1))
+    sleep 0.3
+done
+need_bridge || { echo "tap bridge did not come back after launch" >&2; exit 1; }
+sleep 0.6
+shot discover
+
+tap duck-sim
+shot pin
+
+tap pin-input
+type_text 000000
+tap pin-submit
+sleep 0.8
+shot home
+
+tap nav-interact
+sleep 0.3
+shot interact
+
+tap stop
+sleep 0.3
+shot stop-toast
+
+tap sit
+sleep 0.3
+shot sit-toast
+
+tap nav-models
+sleep 0.3
+tap apply-update
+sleep 0.5
+shot update-refused
+
+tap nav-settings
+sleep 0.3
+tap wifi-scan
+sleep 0.6
+shot wifi-scan
+
+tap wifi-Pollen
+sleep 0.3
+tap wifi-password
+type_text wrong-key
+tap wifi-join
+sleep 0.8
+shot wifi-badkey
+
+echo "shots in $OUT"
+ls -1 "$OUT"

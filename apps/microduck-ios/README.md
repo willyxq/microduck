@@ -26,9 +26,15 @@ xcodebuild test -scheme MicroDuck -destination 'platform=iOS Simulator,name=iPho
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
   -only-testing:MicroDuckUITests/ConnectSimTests
 
-# harness 截图（ios interact 需要辅助功能权限才能点 Simulator 窗口）
+# harness 截图
 cd ~/Workspace/harness/harness
 npx tsx src/cli.ts ios perceive --device "iPhone 17 Pro Max" --out /tmp/harness/ios-latest
+
+# harness / sim-tap 真点击（App 内回环桥 127.0.0.1:17433，不点 Simulator 窗口）
+scripts/sim-tap health
+scripts/harness-ios-l1
 ```
+
+App 启动后会在 loopback 开 TapBridge。harness `ios interact` 带 `id` 时走这座桥；桥在线不要回退 AppleScript。说明书：[`docs/app-demo/harness/ios-tap-bridge.md`](../../docs/app-demo/harness/ios-tap-bridge.md)。
 
 真鸭子到了再换 BLE 传输，页面和调用名不变。

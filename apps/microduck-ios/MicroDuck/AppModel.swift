@@ -38,6 +38,10 @@ struct WifiNetwork: Identifiable {
     var isOpen: Bool { security == "open" }
 }
 
+enum HarnessTarget {
+    static weak var model: AppModel?
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published var screen: Screen = .discover
@@ -55,6 +59,64 @@ final class AppModel: ObservableObject {
     @Published var wifiDraftPSK = ""
 
     let rpc = DuckRpc()
+
+    init() {
+        HarnessTarget.model = self
+    }
+
+    /// Same actions as the on-screen buttons. Used by the loopback tap bridge.
+    @discardableResult
+    func performHarnessAction(_ id: String) -> Bool {
+        switch id {
+        case "duck-sim":
+            openDuck()
+            return true
+        case "pin-input", "wifi-password":
+            return true
+        case "pin-submit":
+            Task { await authenticate() }
+            return true
+        case "nav-home":
+            tab = .home
+            return true
+        case "nav-interact":
+            tab = .interact
+            return true
+        case "nav-models":
+            tab = .models
+            return true
+        case "nav-settings":
+            tab = .settings
+            return true
+        case "stop":
+            refuseMotion("立即停止不走 BLE。真急停是物理按钮；松手停靠 teleop 死人手。")
+            return true
+        case "sit":
+            refuseMotion("坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。")
+            return true
+        case "quack":
+            refuseMotion("坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。")
+            return true
+        case "apply-update":
+            Task { await applyUpdate() }
+            return true
+        case "wifi-scan":
+            Task { await scanWifi() }
+            return true
+        case "wifi-join":
+            Task { await joinDraft() }
+            return true
+        default:
+            if id.hasPrefix("wifi-"), id != "wifi-scan", id != "wifi-join", id != "wifi-password" {
+                let ssid = String(id.dropFirst("wifi-".count))
+                if let net = networks.first(where: { $0.ssid == ssid }) {
+                    Task { await selectWifi(net) }
+                    return true
+                }
+            }
+            return false
+        }
+    }
 
     var duckName: String { string(info["name"]) ?? "duck-sim" }
     var serial: String { string(info["serial"]) ?? "SIM-0001" }

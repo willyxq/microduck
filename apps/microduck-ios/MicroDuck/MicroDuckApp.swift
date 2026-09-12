@@ -8,6 +8,7 @@ struct MicroDuckApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(model)
+                .onAppear { TapBridge.start() }
         }
     }
 }

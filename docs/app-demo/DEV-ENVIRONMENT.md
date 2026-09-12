@@ -177,7 +177,10 @@ docs/app-demo/
   captures/               # harness 真实截图（不是画廊稿）
   v0/                     # 旧控制台存档
 apps/microduck-app/       # L1 web 面。harness 先打这里
+apps/microduck-ios/       # L1 SwiftUI。模拟器连 App-sim；TapBridge :17433
 scripts/duck-app-sim      # 一键拉起协议孪生
+scripts/sim-tap           # 点 iOS 按钮（走 TapBridge）
+scripts/harness-ios-l1    # iOS 发现 → PIN → 停止 / BadKey
 sim-btd/                  # WebSocket 网关，复用 btd session / route
 ```
 

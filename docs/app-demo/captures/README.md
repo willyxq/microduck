@@ -14,3 +14,5 @@ harness 对着正在跑的 App-sim + L1 web 面截的，不是画廊稿。
 | `l1-settings.png` | 设置与传输说明 |
 | `l1-wifi-scan.png` | FakeNet：Pollen、Cafe |
 | `l1-wifi-badkey.png` | 错密码显示 BadKey，不是网络没了 |
+
+iOS 真点击截图：[`ios/`](ios/)（XCUITest）、[`ios-harness-clicks/`](ios-harness-clicks/)（TapBridge / harness）。web 按钮点击：[`harness-buttons/`](harness-buttons/)。

@@ -1,0 +1,20 @@
+#!/bin/sh
+# Talk to the MicroDuck iOS tap bridge (simulator shares 127.0.0.1 with the Mac).
+#   scripts/sim-tap health
+#   scripts/sim-tap elements
+#   scripts/sim-tap id duck-sim
+#   scripts/sim-tap xy 215 320
+#   scripts/sim-tap type 000000
+
+set -eu
+BASE="${MICRODUCK_TAP_BRIDGE:-http://127.0.0.1:17433}"
+
+cmd="${1:-health}"
+case "$cmd" in
+    health) curl -sfS --max-time 2 "$BASE/health"; echo ;;
+    elements) curl -sfS --max-time 2 "$BASE/elements"; echo ;;
+    id) curl -sfS --max-time 2 "$BASE/tap?id=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$2")"; echo ;;
+    xy) curl -sfS --max-time 2 "$BASE/tap?x=$2&y=$3"; echo ;;
+    type) curl -sfS --max-time 2 "$BASE/type?text=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$2")"; echo ;;
+    *) echo "usage: $0 health|elements|id <id>|xy <x> <y>|type <text>" >&2; exit 1 ;;
+esac

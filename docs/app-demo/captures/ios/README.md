@@ -2,7 +2,7 @@
 
 来源：iPhone 17 Pro Max 模拟器，`garden.pollen.microduck`，App-sim 已启动。
 
-点按由 XCUITest 完成（`apps/microduck-ios/MicroDuckUITests`）。harness `ios perceive` 能截图；`ios interact` 的 AppleScript 点击需要本机辅助功能权限，当前环境没有，所以交互验收走 XCUITest。
+点按有两条：XCUITest（本目录），以及 harness / TapBridge（[`../ios-harness-clicks/`](../ios-harness-clicks/)）。`ios perceive` 只截图。不要用 AppleScript 点 Simulator 窗口。
 
 | 文件 | 场景 |
 |---|---|

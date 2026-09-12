@@ -36,17 +36,26 @@ npx tsx src/cli.ts scenario \
 
 ## iOS
 
-`scenario` YAML 是 Playwright，只打 web。iOS 用：
+`scenario` YAML 是 Playwright，只打 web。iOS 有两条真点击路径：
+
+1. **harness / `scripts/sim-tap`**（推荐日常）：App 在 `127.0.0.1:17433` 开 TapBridge，模拟器和 Mac 共用 loopback。见 [`ios-tap-bridge.md`](ios-tap-bridge.md)。
+2. **XCUITest**：不依赖桥，适合回归。
 
 ```bash
+# 发现 → PIN → 首页 → 停止 / 坐下 / BadKey（会写 captures/ios-harness-clicks）
+scripts/harness-ios-l1
+
+# 或单步
+scripts/sim-tap id stop
+
 # 截图
 npx tsx src/cli.ts ios perceive --device "iPhone 17 Pro Max" --out /tmp/harness/ios-latest
 
-# 真实点按（推荐）：XCUITest，不依赖辅助功能权限
+# XCUITest
 cd /Users/william/Workspace/e1901/microduck/microduck/apps/microduck-ios
 xcodebuild test -scheme MicroDuck -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
   -only-testing:MicroDuckUITests/ConnectSimTests
 ```
 
-`ios interact` 靠 AppleScript 点 Simulator 窗口。没开辅助功能时会失败，不要把它当成唯一验收。
+不要用 AppleScript 点 Simulator 窗口当验收。这台机器上 `process "Simulator" window 1` 拿不到可靠窗口。
