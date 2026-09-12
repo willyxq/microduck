@@ -521,7 +521,7 @@ def main():
     args = p.parse_args()
     if args.headless:
         args.viewer = False
-        detach()
+    detach()
     stop = start_runtime(args)
     if args.viewer:
         try:
