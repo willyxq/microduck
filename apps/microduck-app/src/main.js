@@ -356,8 +356,8 @@ function interactView() {
         <div class="stage">${duckSvg(88)}</div>`
         }
       </div>
-      ${drivePanel()}
       <button class="danger" data-testid="stop" data-stop="1">立即停止</button>
+      ${drivePanel()}
       <p class="kicker" style="margin:18px 0 8px">基础互动</p>
       <div class="actions">
         <button class="action" data-testid="sit" data-act="sit">坐下 / 站起</button>

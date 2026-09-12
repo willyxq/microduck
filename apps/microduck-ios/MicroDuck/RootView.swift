@@ -341,19 +341,6 @@ struct InteractView: View {
                 }
                 .modifier(Card())
                 .accessibilityIdentifier("camera-placeholder")
-                if model.lanReady {
-                    DrivePanel()
-                } else {
-                    Text("等待局域网 teleop\n运动控制不经 BLE")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color(red: 0.70, green: 0.68, blue: 0.64))
-                        .multilineTextAlignment(.center)
-                        .frame(width: 168, height: 168)
-                        .background(Color(red: 0.953, green: 0.933, blue: 0.894))
-                        .clipShape(Circle())
-                        .frame(maxWidth: .infinity)
-                        .accessibilityIdentifier("drive-waiting")
-                }
                 Button {
                     model.haltDrive()
                     Task { await model.lanOrToast("robot.stop", [:], L1Copy.stopLan, L1Copy.stop) }
@@ -368,6 +355,19 @@ struct InteractView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("stop")
+                if model.lanReady {
+                    DrivePanel()
+                } else {
+                    Text("等待局域网 teleop\n运动控制不经 BLE")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color(red: 0.70, green: 0.68, blue: 0.64))
+                        .multilineTextAlignment(.center)
+                        .frame(width: 168, height: 168)
+                        .background(Color(red: 0.953, green: 0.933, blue: 0.894))
+                        .clipShape(Circle())
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("drive-waiting")
+                }
                 Text("基础互动")
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
