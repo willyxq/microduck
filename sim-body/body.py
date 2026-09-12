@@ -681,25 +681,30 @@ def remote_io_client(conn: socket.socket):
 
 
 def maybe_viewer(stop: threading.Event):
+    """GLFW 'real world' window. One viewer at a time; after a body swap we
+    close it, wait for GLFW to release, then open the new mesh."""
     try:
         import mujoco.viewer
     except Exception as exc:
         print(f"viewer unavailable: {exc}", flush=True)
         return
-    gen = BODY.generation
-    model, data = BODY.model, BODY.data
-    try:
-        with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
-            print(f"world viewer open — {BODY.body_kind}", flush=True)
-            while viewer.is_running() and not stop.is_set() and BODY.generation == gen:
-                with BODY.lock:
-                    viewer.sync()
-                time.sleep(0.02)
-    except Exception as exc:
-        print(f"viewer failed: {exc}", flush=True)
-    print("world viewer closed (body switch keeps camera/LAN)", flush=True)
     while not stop.is_set():
-        time.sleep(0.5)
+        gen = BODY.generation
+        model, data = BODY.model, BODY.data
+        try:
+            with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
+                print(f"world viewer open — {BODY.body_kind}", flush=True)
+                while viewer.is_running() and not stop.is_set() and BODY.generation == gen:
+                    with BODY.lock:
+                        viewer.sync()
+                    time.sleep(0.02)
+            print("world viewer closed", flush=True)
+        except Exception as exc:
+            print(f"viewer failed: {exc}", flush=True)
+        if stop.is_set():
+            return
+        # GLFW refuses a second launch_passive until the first is fully gone.
+        time.sleep(0.8)
 
 
 def serve_lan(args, stop: threading.Event):
