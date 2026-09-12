@@ -18,9 +18,15 @@ xcrun simctl install "$UDID" "$APP"
 xcrun simctl launch "$UDID" garden.pollen.microduck
 ```
 
-harness 打 iOS（坐标点击，不是 Playwright YAML）：
+验收（模拟器已开机、App-sim 已 `up`）：
 
 ```bash
+# 真实点按：发现 → PIN → 首页 → 配网 BadKey
+xcodebuild test -scheme MicroDuck -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
+  -only-testing:MicroDuckUITests/ConnectSimTests
+
+# harness 截图（ios interact 需要辅助功能权限才能点 Simulator 窗口）
 cd ~/Workspace/harness/harness
 npx tsx src/cli.ts ios perceive --device "iPhone 17 Pro Max" --out /tmp/harness/ios-latest
 ```

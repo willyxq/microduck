@@ -117,33 +117,25 @@ final class AppModel: ObservableObject {
     }
 
     func refreshStatus() async {
-        async let infoJob: Void = {
-            if let v = try? await rpc.call("system.info") as? [String: Any] { info = v }
-        }()
-        async let healthJob: Void = {
-            do {
-                if let v = try await rpc.call("robot.health") as? [String: Any] {
-                    health = v
-                }
-            } catch {
-                health = ["healthy": false, "reason": error.localizedDescription]
+        if let v = try? await rpc.call("system.info") as? [String: Any] { info = v }
+        do {
+            if let v = try await rpc.call("robot.health") as? [String: Any] {
+                health = v
             }
-        }()
-        async let netJob: Void = {
-            if let v = try? await rpc.call("net.status") as? [String: Any] { net = v }
-        }()
-        async let installedJob: Void = {
-            if let v = try? await rpc.call("update.listInstalled", params: ["component": "daemon"]) {
-                if let list = v as? [[String: Any]], let first = list.first {
-                    installedVersion = string(first["version"]) ?? installedVersion
-                } else if let dict = v as? [String: Any], let list = dict["versions"] as? [[String: Any]],
-                          let first = list.first
-                {
-                    installedVersion = string(first["version"]) ?? installedVersion
-                }
+        } catch {
+            health = ["healthy": false, "reason": error.localizedDescription]
+        }
+        if let v = try? await rpc.call("net.status") as? [String: Any] { net = v }
+        if let v = try? await rpc.call("update.listInstalled", params: ["component": "daemon"]) {
+            if let list = v as? [[String: Any]], let first = list.first {
+                installedVersion = string(first["version"]) ?? installedVersion
+            } else if let dict = v as? [String: Any],
+                      let list = dict["versions"] as? [[String: Any]],
+                      let first = list.first
+            {
+                installedVersion = string(first["version"]) ?? installedVersion
             }
-        }()
-        _ = await (infoJob, healthJob, netJob, installedJob)
+        }
     }
 
     func scanWifi() async {

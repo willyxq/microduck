@@ -493,7 +493,7 @@ struct SettingsView: View {
                             .font(.system(size: 14))
                             .foregroundStyle(Palette.muted)
                         HStack(spacing: 8) {
-                            SecureField("密码", text: $model.wifiDraftPSK)
+                            TextField("密码", text: $model.wifiDraftPSK)
                                 .textInputAutocapitalization(.never)
                                 .padding(.horizontal, 14)
                                 .frame(minHeight: 48)

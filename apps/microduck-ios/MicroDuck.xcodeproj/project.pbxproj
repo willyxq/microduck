@@ -13,6 +13,7 @@
 		A10000000000000000000004 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Theme.swift */; };
 		A10000000000000000000005 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* RootView.swift */; };
 		A10000000000000000000006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* Assets.xcassets */; };
+		B10000000000000000000001 /* ConnectSimTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* ConnectSimTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,10 +25,19 @@
 		A20000000000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A30000000000000000000001 /* MicroDuck.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MicroDuck.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000001 /* ConnectSimTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectSimTests.swift; sourceTree = "<group>"; };
+		B30000000000000000000001 /* MicroDuckUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MicroDuckUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A40000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B40000000000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -41,6 +51,7 @@
 			isa = PBXGroup;
 			children = (
 				A50000000000000000000002 /* MicroDuck */,
+				B50000000000000000000001 /* MicroDuckUITests */,
 				A50000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -63,8 +74,17 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000001 /* MicroDuck.app */,
+				B30000000000000000000001 /* MicroDuckUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B50000000000000000000001 /* MicroDuckUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000001 /* ConnectSimTests.swift */,
+			);
+			path = MicroDuckUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -86,6 +106,22 @@
 			productName = MicroDuck;
 			productReference = A30000000000000000000001 /* MicroDuck.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B60000000000000000000001 /* MicroDuckUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B80000000000000000000002 /* Build configuration list for PBXNativeTarget "MicroDuckUITests" */;
+			buildPhases = (
+				B70000000000000000000001 /* Sources */,
+				B40000000000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MicroDuckUITests;
+			productName = MicroDuckUITests;
+			productReference = B30000000000000000000001 /* MicroDuckUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -117,6 +153,7 @@
 			projectRoot = "";
 			targets = (
 				A60000000000000000000001 /* MicroDuck */,
+				B60000000000000000000001 /* MicroDuckUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -133,6 +170,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		B70000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000001 /* ConnectSimTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A70000000000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -239,6 +284,40 @@
 			};
 			name = Release;
 		};
+		BA0000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = garden.pollen.microduck.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = MicroDuck;
+			};
+			name = Debug;
+		};
+		BA0000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = garden.pollen.microduck.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = MicroDuck;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -256,6 +335,15 @@
 			buildConfigurations = (
 				AA0000000000000000000003 /* Debug */,
 				AA0000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B80000000000000000000002 /* Build configuration list for PBXNativeTarget "MicroDuckUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA0000000000000000000001 /* Debug */,
+				BA0000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

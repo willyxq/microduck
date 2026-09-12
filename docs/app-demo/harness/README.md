@@ -32,3 +32,20 @@ npx tsx src/cli.ts scenario \
 | `l1-wifi.yaml` | 配网走 `net.scan` / `net.connect`；Pollen 错密码必须说出是密码问题 |
 
 协议层（`hello` / `authenticate` / `system.info`）用 `scripts/duck-app-sim probe`，不要只用截图证明「已经连上鸭子」。
+
+## iOS
+
+`scenario` YAML 是 Playwright，只打 web。iOS 用：
+
+```bash
+# 截图
+npx tsx src/cli.ts ios perceive --device "iPhone 17 Pro Max" --out /tmp/harness/ios-latest
+
+# 真实点按（推荐）：XCUITest，不依赖辅助功能权限
+cd /Users/william/Workspace/e1901/microduck/microduck/apps/microduck-ios
+xcodebuild test -scheme MicroDuck -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
+  -only-testing:MicroDuckUITests/ConnectSimTests
+```
+
+`ios interact` 靠 AppleScript 点 Simulator 窗口。没开辅助功能时会失败，不要把它当成唯一验收。

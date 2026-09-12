@@ -86,6 +86,7 @@ Mac 最小工具：
 - Rust、Node；harness 在 `~/Workspace/harness/harness`
 - App-sim（`scripts/duck-app-sim` + `sim-btd`），代替还没到的真鸭子
 - L1 web 面：`apps/microduck-app`，浏览器打开 `http://127.0.0.1:5173`
+- L1 iOS：`apps/microduck-ios`，模拟器 bundle `garden.pollen.microduck`
 - 本仓库作为 git 依赖，用来引用 `duck-ipc-proto`
 
 不要在 Ubuntu 上继续写 iOS 工程，也不要重做信息架构。

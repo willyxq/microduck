@@ -62,7 +62,7 @@ HANDOFF 表里曾写提交 `1738ba5`。那是三层演进归档；标签在其�
 | 真鸭子 | 没有，系统蓝牙列表里看不到 `duck-*` |
 | iPhone **mickey**（iOS 26.5） | Xcode 里 Offline |
 | `duckctl` | 源码在，本机还没编过 |
-| App 工程 | L1 web 面在 `apps/microduck-app`（Vite，`127.0.0.1:5173`）。还不是 Tauri / TestFlight 包 |
+| App 工程 | L1 web 面在 `apps/microduck-app`；**iOS SwiftUI** 在 `apps/microduck-ios`（模拟器，`garden.pollen.microduck`）。还不是 TestFlight 包 |
 | App-sim | 已落地：`scripts/duck-app-sim` + `sim-btd`，见 [`SIM-DUCK.md`](SIM-DUCK.md) |
 
 结论：Mac 够写 App 和跑 harness。不够做「真机 BLE 探针」。在鸭子到货前，探针改打 App-sim：同一组调用 `hello` / `authenticate` / `system.info`。
