@@ -94,7 +94,7 @@ Mac 最小工具：
 
 给下一个 Agent 的第一句话可以是：
 
-> 从 `app-checkpoint-2026-09-12` 继续 MicroDuck App。先读 `docs/app-demo/HANDOFF.md` 和 `docs/app-demo/DEV-ENVIRONMENT.md`。不要重做三层产品设计。没有真鸭子：先实现 App-sim，再打 hello / authenticate / system.info。产品目标是第一层现场管理员，不是手机手柄。
+> 从 `app-checkpoint-2026-09-12` 继续 MicroDuck App。先读 `docs/app-demo/HANDOFF.md` 和 `docs/app-demo/DEV-ENVIRONMENT.md`。不要重做三层产品设计。App-sim 和 L1 web 面已经在 `cursor/app-dev-environment-172b`。下一枪是官方客户端形态（Tauri 2 + 同一套协议），或真鸭子到了再开 `ble` 传输。产品目标仍是第一层现场管理员，不是手机手柄。
 
 如果要 fork：
 

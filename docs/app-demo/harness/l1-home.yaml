@@ -31,6 +31,7 @@ steps:
         - text_contains: "互动"
         - text_contains: "模型"
         - text_contains: "设置"
-        - text_not_contains: "控制"
+        - text_contains: "基础控制"
+        - text_not_contains: "手柄"
         - min_interactive_elements: 4
         - no_console_errors: true

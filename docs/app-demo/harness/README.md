@@ -21,7 +21,7 @@ npx tsx src/cli.ts scenario \
   /Users/william/Workspace/e1901/microduck/microduck/docs/app-demo/harness/l1-connect-sim.yaml
 ```
 
-截图和报告在 `/tmp/harness/scenario-*/`。Agent 用 Read 看 `screenshot.png` 和 `report.json`。真实截图副本放 `docs/app-demo/captures/`。
+截图和报告在 `/tmp/harness/scenario-*/`。Agent 用 Read 看 `screenshot.png` 和 `report.json`。真实截图副本在 [`../captures/`](../captures/)。
 
 ## 场景
 
