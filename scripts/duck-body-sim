@@ -63,7 +63,7 @@ up() {
     say "starting MuJoCo body with $py"
     nohup "$py" "$REPO/sim-body/body.py" $extra \
         --lan-port "${LAN##*:}" --camera-port "${CAM##*:}" --body-port "${BODY##*:}" \
-        >"$STATE/body.log" 2>&1 &
+        </dev/null >"$STATE/body.log" 2>&1 &
     echo $! > "$STATE/body.pid"
     i=0
     while [ $i -lt 80 ]; do

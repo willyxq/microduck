@@ -47,7 +47,7 @@ steps:
           ms: 700
 
   - perceive:
-      wait_for_text: "局域网"
+      wait_for_text: "已切换坐下"
       assert:
-        - text_contains: "不经 BLE"
-        - text_contains: "坐下"
+        - text_contains: "已切换坐下"
+        - text_contains: "局域网，不经 BLE"

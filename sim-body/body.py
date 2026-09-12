@@ -17,6 +17,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
+import signal
 import socket
 import threading
 import time
@@ -443,7 +445,21 @@ def start_runtime(args):
     return stop
 
 
+def detach():
+    # Agent / CI shells often SIGTERM the whole process group when the starter
+    # command ends. Leave that group so LAN and camera keep running.
+    try:
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    except Exception:
+        pass
+    try:
+        os.setsid()
+    except OSError:
+        pass
+
+
 def main():
+    detach()
     p = argparse.ArgumentParser()
     p.add_argument("--lan-port", type=int, default=17434)
     p.add_argument("--camera-port", type=int, default=17435)
