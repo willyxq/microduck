@@ -127,6 +127,7 @@ class Body:
     def __init__(self):
         self.lock = threading.Lock()
         self.generation = 0
+        self.retired = []
         self.body_kind = "walk"
         self.sitting = False
         self.target = STAND.copy()
@@ -175,6 +176,9 @@ class Body:
         if self.body_kind == kind:
             return False
         print(f"body-sim switch {self.body_kind} → {kind}", flush=True)
+        # Keep the previous MjModel/MjData alive: the GLFW viewer and JPEG
+        # renderer still hold them until they notice generation change.
+        self.retired.append((self.model, self.data, self.gait))
         self._init_world(kind)
         self.generation += 1
         self.sitting = False
@@ -351,8 +355,15 @@ class Body:
         self.gait.apply_action(action)
         if time.time() < self.quack_until and self.gait.n_joints > 6:
             self.data.ctrl[6] = 0.62
-        for _ in range(DECIMATION):
-            mujoco.mj_step(self.model, self.data)
+        try:
+            for _ in range(DECIMATION):
+                mujoco.mj_step(self.model, self.data)
+        except Exception as exc:
+            print(f"mj_step failed ({self.body_kind}): {exc}", flush=True)
+            kid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_KEY, "STAND")
+            if kid >= 0:
+                mujoco.mj_resetDataKeyframe(self.model, self.data, kid)
+            mujoco.mj_forward(self.model, self.data)
 
     def _step_slide(self, dt):
         vx, vy, vyaw = (float(self.twist[0]), float(self.twist[1]), float(self.twist[2]))
