@@ -35,11 +35,15 @@ from gait import load_gait
 from skills import (
     attach,
     describe,
+    detach,
     install as install_skill,
     install_all as install_all_skills,
     load_catalog,
     lookup,
     set_locomotion,
+    _installed as skill_file,
+    uninstall as uninstall_skill,
+    uninstall_all as uninstall_all_skills,
 )
 
 REPO = Path(__file__).resolve().parents[1]
@@ -139,6 +143,7 @@ class Body:
         self.ticks = 0
         self.locomotion = "walk"
         self.swap_until = 0.0
+        self.viewer_pause = False
         self._init_world("walk")
 
     def _init_world(self, kind: str):
@@ -337,7 +342,7 @@ class Body:
         with self.lock:
             if self.last_move and (time.time() - self.last_move) > DEADMAN:
                 self.twist[:] = 0
-            if time.time() < self.swap_until:
+            if self.viewer_pause or time.time() < self.swap_until:
                 mujoco.mj_forward(self.model, self.data)
             elif self.gait is not None:
                 self._step_gait(dt)
@@ -422,6 +427,9 @@ def render_loop(stop: threading.Event, width=480, height=320):
     renderer = mujoco.Renderer(BODY.model, height=height, width=width)
     gen = BODY.generation
     while not stop.is_set():
+        if BODY.viewer_pause:
+            time.sleep(0.03)
+            continue
         if BODY.generation != gen:
             try:
                 renderer.close()
@@ -577,6 +585,31 @@ def handle_call(method: str, params: dict, req_id):
         except (ValueError, FileNotFoundError) as exc:
             return rpc_result(req_id, error=str(exc))
         return rpc_result(req_id, {"ok": True, **info, "skills": describe(BODY.locomotion, BODY.body_kind)})
+    if method == "skill.uninstall":
+        skill_id = params.get("id") or params.get("skill") or ""
+        try:
+            if skill_id in ("all", "*", "全部"):
+                infos = uninstall_all_skills()
+                info = {"id": "all", "installed": False, "count": len(infos)}
+                skills = load_catalog()
+            else:
+                info = uninstall_skill(skill_id)
+                skills = [s for s in load_catalog() if s["id"] == skill_id]
+            if BODY.gait is not None:
+                with BODY.lock:
+                    for skill in skills:
+                        detach(BODY.gait, skill)
+                        if skill_file(skill) is not None:
+                            attach(BODY.gait, skill)
+                    if BODY.locomotion not in getattr(BODY.gait, "locomotion_sessions", {}):
+                        fallback = "roller" if BODY.body_kind == "rollers" else "walk"
+                        if fallback in getattr(BODY.gait, "locomotion_sessions", {}):
+                            BODY.locomotion = set_locomotion(BODY.gait, fallback)
+                        elif BODY.body_kind == "rollers":
+                            BODY.ensure_body("walk")
+        except (ValueError, FileNotFoundError) as exc:
+            return rpc_result(req_id, error=str(exc))
+        return rpc_result(req_id, {"ok": True, **info, "skills": describe(BODY.locomotion, BODY.body_kind)})
     if method == "robot.sound":
         BODY.set_skill("quack")
         return rpc_result(req_id, {"ok": True, "channel": "lan"})
@@ -681,8 +714,8 @@ def remote_io_client(conn: socket.socket):
 
 
 def maybe_viewer(stop: threading.Event):
-    """GLFW 'real world' window. One viewer at a time; after a body swap we
-    close it, wait for GLFW to release, then open the new mesh."""
+    """GLFW 'real world' window. Pause physics around close/open so
+    mj_copyDataVisual does not run while mj_step holds the data stack."""
     try:
         import mujoco.viewer
     except Exception as exc:
@@ -691,19 +724,24 @@ def maybe_viewer(stop: threading.Event):
     while not stop.is_set():
         gen = BODY.generation
         model, data = BODY.model, BODY.data
+        BODY.viewer_pause = True
+        time.sleep(0.15)
         try:
             with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
                 print(f"world viewer open — {BODY.body_kind}", flush=True)
+                BODY.viewer_pause = False
                 while viewer.is_running() and not stop.is_set() and BODY.generation == gen:
                     with BODY.lock:
                         viewer.sync()
                     time.sleep(0.02)
+                BODY.viewer_pause = True
+                time.sleep(0.1)
             print("world viewer closed", flush=True)
         except Exception as exc:
             print(f"viewer failed: {exc}", flush=True)
+            BODY.viewer_pause = False
         if stop.is_set():
             return
-        # GLFW refuses a second launch_passive until the first is fully gone.
         time.sleep(0.8)
 
 

@@ -601,10 +601,26 @@ struct ModelsView: View {
                     .disabled(model.busy)
                     .accessibilityIdentifier("install-all")
                 }
+                if model.skills.contains(where: { $0.removable }) {
+                    Button {
+                        Task { await model.uninstallSkill("all") }
+                    } label: {
+                        Text("卸载已下载")
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .foregroundStyle(Palette.ink)
+                            .background(.white)
+                            .clipShape(Capsule())
+                            .shadow(color: Color.black.opacity(0.06), radius: 8, y: 4)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.busy)
+                    .accessibilityIdentifier("uninstall-all")
+                }
                 ForEach(model.skills.filter { $0.body == "walk" }) { skill in
                     skillCard(skill)
                 }
-                Text("轮滑机体（当前鸭子没有轮）")
+                Text("轮滑机体")
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
                 ForEach(model.skills.filter { $0.body == "rollers" }) { skill in
@@ -637,6 +653,26 @@ struct ModelsView: View {
                 Text("已可在互动页使用 · 不用选 onnx")
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
+                if skill.removable {
+                    Button {
+                        Task { await model.uninstallSkill(skill.id) }
+                    } label: {
+                        Text("卸载")
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .foregroundStyle(Palette.ink)
+                            .background(.white)
+                            .clipShape(Capsule())
+                            .shadow(color: Color.black.opacity(0.06), radius: 8, y: 4)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.busy)
+                    .accessibilityIdentifier("uninstall-\(skill.id)")
+                } else {
+                    Text("出厂能力，卸不掉")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                }
             } else {
                 Button {
                     Task { await model.installSkill(skill.id) }

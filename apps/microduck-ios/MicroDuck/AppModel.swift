@@ -39,6 +39,7 @@ struct DuckSkill: Identifiable {
     var ready: Bool
     var installed: Bool
     var available: Bool
+    var removable: Bool
     var active: Bool
     var source: String
 
@@ -53,6 +54,7 @@ struct DuckSkill: Identifiable {
             ready: raw["ready"] as? Bool ?? false,
             installed: raw["installed"] as? Bool ?? false,
             available: raw["available"] as? Bool ?? false,
+            removable: raw["removable"] as? Bool ?? false,
             active: raw["active"] as? Bool ?? false,
             source: raw["source"] as? String ?? ""
         )
@@ -205,6 +207,11 @@ final class AppModel: ObservableObject {
             Task { await joinDraft() }
             return true
         default:
+            if id.hasPrefix("uninstall-") {
+                let skill = String(id.dropFirst("uninstall-".count))
+                Task { await uninstallSkill(skill) }
+                return true
+            }
             if id.hasPrefix("install-") {
                 let skill = String(id.dropFirst("install-".count))
                 Task { await installSkill(skill) }
@@ -340,6 +347,21 @@ final class AppModel: ObservableObject {
             await probeSkills()
             let title = skills.first(where: { $0.id == id })?.title ?? id
             showToast(id == "all" ? "已启用全部动作能力" : "已启用「\(title)」")
+        } catch {
+            showToast(error.localizedDescription)
+        }
+    }
+
+    func uninstallSkill(_ id: String) async {
+        guard lanReady else {
+            showToast("先开身体孪生，再卸载能力")
+            return
+        }
+        do {
+            _ = try await lan.call("skill.uninstall", params: ["id": id])
+            await probeSkills()
+            let title = skills.first(where: { $0.id == id })?.title ?? id
+            showToast(id == "all" ? "已卸载下载的能力" : "已卸载「\(title)」")
         } catch {
             showToast(error.localizedDescription)
         }

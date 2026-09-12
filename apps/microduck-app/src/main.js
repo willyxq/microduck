@@ -467,9 +467,15 @@ function capabilityCards() {
   const card = (s) => {
     const chip = s.ready ? "已安装" : s.available ? "可下载" : "缺文件";
     const kind = s.ready ? "ok" : s.available ? "warn" : "";
+    const install = `<button class="cta" data-install="${s.id}" data-testid="install-${s.id}" ${state.busy || !s.available ? "disabled" : ""}>下载并启用</button>`;
+    const uninstall = s.removable
+      ? `<button class="ghost wide" data-uninstall="${s.id}" data-testid="uninstall-${s.id}" ${state.busy ? "disabled" : ""}>卸载</button>`
+      : s.ready
+        ? `<p class="kicker">出厂能力，卸不掉</p>`
+        : "";
     const btn = s.ready
-      ? `<p class="kicker">已可在互动页使用 · 不用选 onnx</p>`
-      : `<button class="cta" data-install="${s.id}" data-testid="install-${s.id}" ${state.busy || !s.available ? "disabled" : ""}>下载并启用</button>`;
+      ? `<p class="kicker">已可在互动页使用 · 不用选 onnx</p>${uninstall}`
+      : `${install}`;
     return `<div class="card" data-testid="skill-card-${s.id}">
       <div class="row">
         <div>
@@ -483,9 +489,11 @@ function capabilityCards() {
     </div>`;
   };
   const pending = state.skills.filter((s) => !s.ready && s.available).length;
+  const removable = state.skills.filter((s) => s.removable).length;
   return `<p class="kicker" style="margin:18px 0 8px">第二层 · 动作能力</p>
     <p class="sub">点能力，不点文件。下载后推理模型会自己切。轮滑会换成带轮机体。</p>
     ${pending ? `<button class="cta" data-install="all" data-testid="install-all" ${state.busy ? "disabled" : ""}>全部下载并启用</button>` : ""}
+    ${removable ? `<button class="ghost wide" data-uninstall="all" data-testid="uninstall-all" ${state.busy ? "disabled" : ""}>卸载已下载</button>` : ""}
     ${walk.map(card).join("")}
     <p class="kicker" style="margin:18px 0 8px">轮滑机体</p>
     ${rollers.map(card).join("")}`;
@@ -800,6 +808,18 @@ root.addEventListener("click", async (ev) => {
       await lan.call("skill.install", { id });
       await probeSkills();
       toast(id === "all" ? "已启用全部动作能力" : `已启用「${meta?.title || id}」`);
+    });
+    return;
+  }
+  const uninstallBtn = ev.target.closest("[data-uninstall]");
+  if (uninstallBtn) {
+    const id = uninstallBtn.dataset.uninstall;
+    const meta = state.skills.find((s) => s.id === id);
+    await withBusy(async () => {
+      if (!state.lanReady) throw new Error("先开身体孪生，再卸载能力");
+      await lan.call("skill.uninstall", { id });
+      await probeSkills();
+      toast(id === "all" ? "已卸载下载的能力" : `已卸载「${meta?.title || id}」`);
     });
     return;
   }

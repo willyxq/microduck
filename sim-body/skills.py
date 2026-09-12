@@ -42,11 +42,13 @@ def _available(skill: dict) -> Path | None:
     return path if path.exists() else None
 
 
-def _installed(skill: dict) -> Path | None:
+def _copied(skill: dict) -> Path | None:
     path = INSTALLED / skill["file"]
-    if path.exists():
-        return path
-    return _builtin(skill)
+    return path if path.exists() else None
+
+
+def _installed(skill: dict) -> Path | None:
+    return _copied(skill) or _builtin(skill)
 
 
 def describe(locomotion: str = "walk", body_kind: str = "walk") -> list[dict]:
@@ -54,6 +56,7 @@ def describe(locomotion: str = "walk", body_kind: str = "walk") -> list[dict]:
     for skill in load_catalog():
         installed = _installed(skill)
         available = _available(skill)
+        copied = _copied(skill)
         out.append(
             {
                 "id": skill["id"],
@@ -63,6 +66,7 @@ def describe(locomotion: str = "walk", body_kind: str = "walk") -> list[dict]:
                 "body": skill["body"],
                 "ready": installed is not None,
                 "installed": installed is not None,
+                "removable": copied is not None,
                 "available": available is not None or installed is not None,
                 "active": skill["id"] == locomotion,
                 "bytes": (available or installed).stat().st_size if (available or installed) else 0,
@@ -89,6 +93,36 @@ def install(skill_id: str) -> dict:
 
 def install_all() -> list[dict]:
     return [install(skill["id"]) for skill in load_catalog()]
+
+
+def uninstall(skill_id: str) -> dict:
+    skill = lookup(skill_id)
+    if skill is None:
+        raise ValueError(f"没有这个能力：{skill_id}")
+    dest = INSTALLED / skill["file"]
+    if not dest.exists():
+        if _builtin(skill):
+            raise ValueError(f"「{skill['title']}」是出厂能力，不能卸载")
+        raise ValueError(f"「{skill['title']}」还没安装")
+    dest.unlink()
+    return {"id": skill_id, "installed": False, "ready": _installed(skill) is not None}
+
+
+def uninstall_all() -> list[dict]:
+    return [uninstall(skill["id"]) for skill in load_catalog() if _copied(skill)]
+
+
+def detach(policy, skill: dict) -> None:
+    sid = skill["id"]
+    if sid == "pick":
+        policy.ground_pick_session = None
+    if sid == "sitstand" and _installed(skill) is None:
+        policy.sit_session = None
+    if sid == "roller_crouch":
+        policy.crouch_session = None
+    getattr(policy, "locomotion_sessions", {}).pop(sid, None)
+    getattr(policy, "behavior_sessions", {}).pop(sid, None)
+    getattr(policy, "behavior_durations", {}).pop(sid, None)
 
 
 def attach(policy, skill: dict) -> bool:
