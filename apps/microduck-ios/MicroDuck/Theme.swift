@@ -148,15 +148,19 @@ struct DriveStick: View {
                         endRadius: 90
                     )
                 )
-                .frame(width: 176, height: 176)
+                .frame(width: 168, height: 168)
                 .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
+            Text("前")
+                .font(.system(size: 11, weight: .heavy))
+                .foregroundStyle(Palette.muted)
+                .offset(y: -68)
             Circle()
                 .fill(Palette.duck)
                 .frame(width: 64, height: 64)
                 .offset(knob)
                 .shadow(color: Color.black.opacity(0.16), radius: 10, y: 6)
         }
-        .frame(maxWidth: .infinity)
+        .frame(width: 168, height: 168)
         .accessibilityIdentifier("stick-drive")
         .gesture(
             DragGesture(minimumDistance: 0)
@@ -171,6 +175,9 @@ struct DriveStick: View {
                     model.haltDrive()
                 }
         )
+        .onChange(of: model.driving) { _, driving in
+            if !driving { knob = .zero }
+        }
         .onReceive(timer) { _ in
             if knob != .zero {
                 let x = Double(knob.width / travel)
@@ -178,5 +185,73 @@ struct DriveStick: View {
                 model.notifyMove(vx: -y * maxLinear, vyaw: -x * maxAngular)
             }
         }
+    }
+}
+
+struct DriveHold: View {
+    var title: String
+    var testID: String
+    var primary = false
+    var start: () -> Void
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 15, weight: .bold))
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .foregroundStyle(primary ? Color(red: 0.23, green: 0.16, blue: 0) : Palette.ink)
+            .background(primary ? Palette.duck : Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .shadow(color: Color.black.opacity(0.06), radius: 8, y: 4)
+            .overlay {
+                if model.holdDir == testID {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Palette.teal, lineWidth: 2)
+                }
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in start() }
+                    .onEnded { _ in model.haltDrive() }
+            )
+            .accessibilityIdentifier(testID)
+    }
+}
+
+struct DrivePanel: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("手动驾驶")
+                .font(.system(size: 16, weight: .bold))
+            Text("在 App 里开。电脑窗口是同一只鸭子。")
+                .font(.system(size: 14))
+                .foregroundStyle(Palette.muted)
+            HStack(spacing: 8) {
+                DriveHold(title: "左转", testID: "drive-left") {
+                    model.holdDrive(dir: "drive-left", vx: 0, vyaw: 1.5)
+                }
+                DriveStick()
+                DriveHold(title: "右转", testID: "drive-right") {
+                    model.holdDrive(dir: "drive-right", vx: 0, vyaw: -1.5)
+                }
+            }
+            HStack(spacing: 8) {
+                DriveHold(title: "按住前进", testID: "drive-fwd", primary: true) {
+                    model.holdDrive(dir: "drive-fwd", vx: 0.3, vyaw: 0)
+                }
+                DriveHold(title: "后退", testID: "drive-back") {
+                    model.holdDrive(dir: "drive-back", vx: -0.3, vyaw: 0)
+                }
+            }
+            Text("点住方向或拖摇杆 · 松手即停 · 不经 BLE")
+                .font(.system(size: 12))
+                .foregroundStyle(Palette.muted)
+                .frame(maxWidth: .infinity)
+        }
+        .modifier(Card())
+        .accessibilityIdentifier("drive-panel")
     }
 }

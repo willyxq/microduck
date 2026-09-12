@@ -49,13 +49,33 @@ function duckSvg(size = 128) {
 
 function toast(msg) {
   state.toast = msg;
-  render();
+  paintToast();
   setTimeout(() => {
     if (state.toast === msg) {
       state.toast = "";
-      render();
+      paintToast();
     }
   }, 2800);
+}
+
+function paintToast() {
+  const phone = document.querySelector(".phone");
+  if (!phone) {
+    if (state.toast) render();
+    return;
+  }
+  let el = phone.querySelector("[data-testid='toast']");
+  if (!state.toast) {
+    el?.remove();
+    return;
+  }
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "toast";
+    el.dataset.testid = "toast";
+    phone.appendChild(el);
+  }
+  el.textContent = state.toast;
 }
 
 async function withBusy(fn) {
@@ -286,42 +306,63 @@ function homeView() {
     </div>`;
 }
 
+function drivePanel() {
+  if (!state.lanReady) {
+    return `<div class="stick" data-testid="drive-waiting">等待局域网 teleop<br/>运动控制不经 BLE</div>`;
+  }
+  return `<div class="drive-card" data-testid="drive-panel">
+      <div class="drive-head">
+        <p class="title">手动驾驶</p>
+        <p class="sub">在 App 里开。电脑窗口是同一只鸭子。</p>
+      </div>
+      <div class="drive-grid">
+        <button type="button" class="drive-hold" data-drive="left" data-testid="drive-left">左转</button>
+        <div class="stick-pad" data-testid="stick-drive">
+          <span class="stick-mark n">前</span>
+          <span class="stick-mark e">右</span>
+          <span class="stick-mark s">后</span>
+          <span class="stick-mark w">左</span>
+          <div class="stick-knob" data-testid="stick-knob"></div>
+        </div>
+        <button type="button" class="drive-hold" data-drive="right" data-testid="drive-right">右转</button>
+      </div>
+      <div class="drive-holds">
+        <button type="button" class="drive-hold primary" data-drive="fwd" data-testid="drive-fwd">按住前进</button>
+        <button type="button" class="drive-hold" data-drive="back" data-testid="drive-back">后退</button>
+      </div>
+      <p class="stick-hint">点住方向或拖摇杆 · 松手即停 · 不经 BLE</p>
+    </div>`;
+}
+
 function interactView() {
   return `${topbar()}
     <div class="page">
       <div class="row">
         <h2>互动</h2>
-        <span class="chip">基础控制</span>
+        <span class="chip">${state.lanReady ? "局域网驾驶" : "基础控制"}</span>
       </div>
       <div class="card" data-testid="camera-placeholder">
         <p class="kicker">${COPY.cameraKicker}</p>
         ${
           state.cameraLive
             ? `<p class="title">跟随鸭子</p>
-        <p class="sub">局域网画面，不是 BLE。电脑上的 MuJoCo 窗口是真实世界。</p>
-        <img class="stage-live" data-testid="camera-feed" src="${SIM_DUCK.cameraStill}" alt="body camera" />`
+        <p class="sub">App 画面，不是 BLE。电脑上的窗口跟着同一只走。</p>
+        <div class="stage-live-wrap">
+          <img class="stage-live" data-testid="camera-feed" src="${SIM_DUCK.cameraStill}" alt="body camera" />
+          <div class="drive-pip" data-testid="drive-hud">待机</div>
+        </div>`
             : `<p class="title">${COPY.cameraTitle}</p>
         <p class="sub">${COPY.cameraSub}</p>
         <div class="stage">${duckSvg(88)}</div>`
         }
       </div>
+      ${drivePanel()}
       <button class="danger" data-testid="stop" data-stop="1">立即停止</button>
       <p class="kicker" style="margin:18px 0 8px">基础互动</p>
       <div class="actions">
         <button class="action" data-testid="sit" data-act="sit">坐下 / 站起</button>
         <button class="action" data-testid="quack" data-act="quack">叫一声</button>
       </div>
-      <p class="kicker" style="margin:20px 0 8px">手动驾驶 · 调试能力</p>
-      ${
-        state.lanReady
-          ? `<div class="stick-wrap">
-        <div class="stick-pad" data-testid="stick-drive">
-          <div class="stick-knob" data-testid="stick-knob"></div>
-        </div>
-      </div>
-      <p class="stick-hint">上前 · 左右转 · 松手即停 · 不经 BLE</p>`
-          : `<div class="stick">等待局域网 teleop<br/>运动控制不经 BLE</div>`
-      }
     </div>`;
 }
 
@@ -399,7 +440,32 @@ function settingsView() {
 
 const MAX_LINEAR = 0.3;
 const MAX_ANGULAR = 1.5;
-const drive = { vx: 0, vy: 0, vyaw: 0, sending: false, x: 0, y: 0, holding: false };
+const drive = { vx: 0, vy: 0, vyaw: 0, sending: false, x: 0, y: 0, holding: false, holdDir: "" };
+
+function driveLabel() {
+  if (Math.abs(drive.vx) < 0.02 && Math.abs(drive.vyaw) < 0.05) return "待机";
+  const bits = [];
+  if (drive.vx > 0.02) bits.push("前进");
+  if (drive.vx < -0.02) bits.push("后退");
+  if (drive.vyaw > 0.05) bits.push("左转");
+  if (drive.vyaw < -0.05) bits.push("右转");
+  return bits.join(" · ") || "待机";
+}
+
+function paintDriveHud() {
+  const hud = document.querySelector("[data-testid='drive-hud']");
+  if (hud) {
+    hud.textContent = driveLabel();
+    hud.classList.toggle("on", Boolean(drive.sending || drive.holding || drive.holdDir));
+  }
+  document.querySelectorAll("[data-drive]").forEach((btn) => {
+    btn.classList.toggle("on", drive.holdDir === btn.dataset.drive);
+  });
+  const knob = document.querySelector("[data-testid='stick-knob']");
+  if (knob && !drive.holding) {
+    knob.style.transform = `translate(${drive.x * 48}px, ${drive.y * 48}px)`;
+  }
+}
 
 function sendTwist(forceZero = false) {
   if (!state.lanReady) return;
@@ -409,10 +475,12 @@ function sendTwist(forceZero = false) {
       lan.notify("robot.move", { vx: 0, vy: 0, vyaw: 0 });
       drive.sending = false;
     }
+    paintDriveHud();
     return;
   }
   drive.sending = true;
   lan.notify("robot.move", { vx: drive.vx, vy: drive.vy, vyaw: drive.vyaw });
+  paintDriveHud();
 }
 
 function haltDrive() {
@@ -422,7 +490,31 @@ function haltDrive() {
   drive.x = 0;
   drive.y = 0;
   drive.holding = false;
+  drive.holdDir = "";
   sendTwist(true);
+}
+
+function applyHold(dir) {
+  drive.holdDir = dir;
+  drive.holding = false;
+  drive.x = 0;
+  drive.y = 0;
+  drive.vx = 0;
+  drive.vyaw = 0;
+  if (dir === "fwd") {
+    drive.vx = MAX_LINEAR;
+    drive.y = -1;
+  } else if (dir === "back") {
+    drive.vx = -MAX_LINEAR;
+    drive.y = 1;
+  } else if (dir === "left") {
+    drive.vyaw = MAX_ANGULAR;
+    drive.x = -1;
+  } else if (dir === "right") {
+    drive.vyaw = -MAX_ANGULAR;
+    drive.x = 1;
+  }
+  sendTwist();
 }
 
 function wireStick() {
@@ -459,7 +551,10 @@ function wireStick() {
     const at = read(ev);
     apply(at.x, at.y);
   };
-  const release = () => apply(0, 0);
+  const release = () => {
+    drive.holding = false;
+    apply(0, 0);
+  };
   pad.onpointerup = release;
   pad.onpointercancel = release;
 }
@@ -518,6 +613,21 @@ function render() {
   }
   wireStick();
 }
+
+root.addEventListener("pointerdown", (ev) => {
+  const btn = ev.target.closest("[data-drive]");
+  if (!btn || !state.lanReady) return;
+  ev.preventDefault();
+  btn.setPointerCapture(ev.pointerId);
+  applyHold(btn.dataset.drive);
+});
+root.addEventListener("pointerup", (ev) => {
+  if (!ev.target.closest("[data-drive]")) return;
+  if (drive.holdDir) haltDrive();
+});
+root.addEventListener("pointercancel", () => {
+  if (drive.holdDir) haltDrive();
+});
 
 root.addEventListener("click", async (ev) => {
   const tab = ev.target.closest("[data-tab]");

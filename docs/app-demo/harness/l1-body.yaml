@@ -38,6 +38,7 @@ steps:
       assert:
         - element_visible: "[data-testid='camera-feed']"
         - element_visible: "[data-testid='stick-drive']"
+        - element_visible: "[data-testid='drive-fwd']"
         - text_contains: "局域网"
 
   - interact:

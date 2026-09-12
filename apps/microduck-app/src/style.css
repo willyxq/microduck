@@ -183,13 +183,72 @@ h2 { font-size: 28px; }
   border-radius: 50% 50% 0 0;
 }
 .stage .duck { position: relative; z-index: 1; margin: 0; width: 88px; height: 88px; }
+.stage-live-wrap {
+  position: relative;
+  margin-top: 8px;
+}
 .stage-live {
   display: block;
   width: 100%;
-  height: 180px;
+  height: 148px;
   object-fit: cover;
   border-radius: 16px;
   background: #c9b894;
+}
+.drive-pip {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  background: #2b2a27cc;
+  color: #fff8e8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.drive-pip.on {
+  background: #12897d;
+}
+.drive-card {
+  background: var(--card);
+  border-radius: 28px;
+  padding: 16px 14px 14px;
+  box-shadow: var(--shadow);
+  margin: 14px 0;
+}
+.drive-head .title { margin: 0 0 2px; }
+.drive-head .sub { margin: 0 0 12px; }
+.drive-grid {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+}
+.drive-holds {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.drive-hold {
+  min-height: 52px;
+  border: 0;
+  border-radius: 18px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 750;
+  box-shadow: var(--shadow);
+  touch-action: none;
+  user-select: none;
+}
+.drive-hold.primary {
+  background: var(--duck);
+  color: #3b2a00;
+}
+.drive-hold.on {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
 }
 .stick {
   margin: 16px auto 0;
@@ -205,21 +264,28 @@ h2 { font-size: 28px; }
   line-height: 1.35;
   padding: 24px;
 }
-.stick-wrap {
-  display: flex;
-  justify-content: center;
-  margin: 12px 0 4px;
-}
 .stick-pad {
   position: relative;
-  width: 176px;
-  height: 176px;
+  width: 168px;
+  height: 168px;
+  margin: 0 auto;
   border-radius: 50%;
   background:
     radial-gradient(circle at 50% 42%, #fffdf8 0 38%, #f3eee4 62%, #e8dfd0 100%);
   box-shadow: inset 0 1px 0 #fff, var(--shadow);
   touch-action: none;
 }
+.stick-mark {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.stick-mark.n { top: 10px; left: 50%; transform: translateX(-50%); }
+.stick-mark.s { bottom: 10px; left: 50%; transform: translateX(-50%); }
+.stick-mark.w { left: 10px; top: 50%; transform: translateY(-50%); }
+.stick-mark.e { right: 10px; top: 50%; transform: translateY(-50%); }
 .stick-knob {
   position: absolute;
   left: 50%;
@@ -236,7 +302,7 @@ h2 { font-size: 28px; }
   text-align: center;
   color: var(--muted);
   font-size: 12px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 .pin-row {
   display: flex;

@@ -289,7 +289,7 @@ struct InteractView: View {
                 HStack {
                     Text("互动").font(.system(size: 28, weight: .bold, design: .serif))
                     Spacer()
-                    Chip(text: "基础控制")
+                    Chip(text: model.lanReady ? "局域网驾驶" : "基础控制")
                 }
                 VStack(alignment: .leading, spacing: 10) {
                     Text(L1Copy.cameraKicker)
@@ -298,12 +298,23 @@ struct InteractView: View {
                     if model.cameraLive {
                         Text("跟随鸭子")
                             .font(.system(size: 16, weight: .bold))
-                        Text("局域网画面，不是 BLE。电脑上的 MuJoCo 窗口是真实世界。")
+                        Text("App 画面，不是 BLE。电脑上的窗口跟着同一只走。")
                             .font(.system(size: 14))
                             .foregroundStyle(Palette.muted)
-                        CameraFeed()
-                            .frame(height: 180)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        ZStack(alignment: .bottomLeading) {
+                            CameraFeed()
+                            Text(model.driveLabel)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(model.driving ? Palette.teal : Color.black.opacity(0.7))
+                                .clipShape(Capsule())
+                                .padding(10)
+                                .accessibilityIdentifier("drive-hud")
+                        }
+                        .frame(height: 148)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     } else {
                     Text(L1Copy.cameraTitle)
                         .font(.system(size: 16, weight: .bold))
@@ -330,6 +341,19 @@ struct InteractView: View {
                 }
                 .modifier(Card())
                 .accessibilityIdentifier("camera-placeholder")
+                if model.lanReady {
+                    DrivePanel()
+                } else {
+                    Text("等待局域网 teleop\n运动控制不经 BLE")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color(red: 0.70, green: 0.68, blue: 0.64))
+                        .multilineTextAlignment(.center)
+                        .frame(width: 168, height: 168)
+                        .background(Color(red: 0.953, green: 0.933, blue: 0.894))
+                        .clipShape(Circle())
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("drive-waiting")
+                }
                 Button {
                     model.haltDrive()
                     Task { await model.lanOrToast("robot.stop", [:], L1Copy.stopLan, L1Copy.stop) }
@@ -350,26 +374,6 @@ struct InteractView: View {
                 HStack(spacing: 12) {
                     action("坐下 / 站起", id: "sit")
                     action("叫一声", id: "quack")
-                }
-                Text("手动驾驶 · 调试能力")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Palette.muted)
-                    .padding(.top, 6)
-                if model.lanReady {
-                    DriveStick()
-                    Text("上前 · 左右转 · 松手即停 · 不经 BLE")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Palette.muted)
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("等待局域网 teleop\n运动控制不经 BLE")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color(red: 0.70, green: 0.68, blue: 0.64))
-                        .multilineTextAlignment(.center)
-                        .frame(width: 168, height: 168)
-                        .background(Color(red: 0.953, green: 0.933, blue: 0.894))
-                        .clipShape(Circle())
-                        .frame(maxWidth: .infinity)
                 }
             }
             .padding(.horizontal, 18)

@@ -73,6 +73,22 @@ final class AppModel: ObservableObject {
     @Published var rollbackDraft = false
     @Published var lanReady = false
     @Published var cameraLive = false
+    @Published var driveVx = 0.0
+    @Published var driveVyaw = 0.0
+    @Published var holdDir = ""
+    private var drivePulse: Task<Void, Never>?
+
+    var driving: Bool { abs(driveVx) + abs(driveVyaw) > 0.02 }
+
+    var driveLabel: String {
+        if !driving { return "待机" }
+        var bits: [String] = []
+        if driveVx > 0.02 { bits.append("前进") }
+        if driveVx < -0.02 { bits.append("后退") }
+        if driveVyaw > 0.05 { bits.append("左转") }
+        if driveVyaw < -0.05 { bits.append("右转") }
+        return bits.isEmpty ? "待机" : bits.joined(separator: " · ")
+    }
 
     let rpc = DuckRpc()
     let lan = DuckRpc(url: DuckRpc.lanURL)
@@ -108,6 +124,21 @@ final class AppModel: ObservableObject {
         case "nav-settings":
             haltDrive()
             tab = .settings
+            return true
+        case "drive-fwd":
+            holdDrive(dir: "drive-fwd", vx: 0.3, vyaw: 0)
+            return true
+        case "drive-back":
+            holdDrive(dir: "drive-back", vx: -0.3, vyaw: 0)
+            return true
+        case "drive-left":
+            holdDrive(dir: "drive-left", vx: 0, vyaw: 1.5)
+            return true
+        case "drive-right":
+            holdDrive(dir: "drive-right", vx: 0, vyaw: -1.5)
+            return true
+        case "drive-halt":
+            haltDrive()
             return true
         case "stop":
             haltDrive()
@@ -243,13 +274,37 @@ final class AppModel: ObservableObject {
     }
 
     func notifyMove(vx: Double, vy: Double = 0, vyaw: Double) {
+        driveVx = vx
+        driveVyaw = vyaw
         guard lanReady else { return }
         lan.notify("robot.move", params: ["vx": vx, "vy": vy, "vyaw": vyaw])
+        pulseDrive()
+    }
+
+    func holdDrive(dir: String, vx: Double, vyaw: Double) {
+        holdDir = dir
+        notifyMove(vx: vx, vyaw: vyaw)
     }
 
     func haltDrive() {
+        drivePulse?.cancel()
+        drivePulse = nil
+        driveVx = 0
+        driveVyaw = 0
+        holdDir = ""
         guard lanReady else { return }
         lan.notify("robot.move", params: ["vx": 0, "vy": 0, "vyaw": 0])
+    }
+
+    private func pulseDrive() {
+        guard drivePulse == nil else { return }
+        drivePulse = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+                guard let self, self.driving else { continue }
+                self.lan.notify("robot.move", params: ["vx": self.driveVx, "vy": 0, "vyaw": self.driveVyaw])
+            }
+        }
     }
 
     func lanOrToast(_ method: String, _ params: [String: Any], _ ok: String, _ fallback: String) async {
