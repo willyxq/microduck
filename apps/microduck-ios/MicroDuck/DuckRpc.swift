@@ -31,7 +31,8 @@ struct AuthResult: Decodable {
 /// Same NDJSON JSON-RPC the web face and `btd` speak. Transport is WebSocket on App-sim.
 final class DuckRpc: @unchecked Sendable {
     static let apiVersion = 16
-    static let simURL = URL(string: "ws://127.0.0.1:17432")!
+    static let transport = ProcessInfo.processInfo.environment["MICRODUCK_TRANSPORT"] ?? "sim"
+    static let simURL = URL(string: ProcessInfo.processInfo.environment["MICRODUCK_SIM_URL"] ?? "ws://127.0.0.1:17432")!
 
     private let url: URL
     private let lock = NSLock()

@@ -29,8 +29,9 @@ npx tsx src/cli.ts scenario \
 |---|---|
 | `l1-connect-sim.yaml` | 发现页能看见 `duck-sim`，PIN 后进入现场管理员首页 |
 | `l1-home.yaml` | 首页回答「鸭子现在怎么样」：名字、健康、网络、更新摘要；底栏是首页 / 互动 / 模型 / 设置 |
-| `l1-wifi.yaml` | 配网走 `net.scan` / `net.connect`；Pollen 错密码必须说出是密码问题 |
-| `l1-buttons.yaml` | 真点击：停止 / 坐下 / 更新 / 错密码，截图核对 toast |
+| `l1-wifi.yaml` | 配网走 `net.scan` / `net.connect`；Pollen 错密码必须说出是密码问题；Cafe 开放网直接加入 |
+| `l1-buttons.yaml` | 真点击：停止 / 坐下 / 更新 / 回退二次确认 / 错密码，截图核对 toast |
+| [`L1-ACCEPTANCE.md`](L1-ACCEPTANCE.md) | 收口验收单：协议 + web 场景 + iOS 点击 |
 
 协议层（`hello` / `authenticate` / `system.info`）用 `scripts/duck-app-sim probe`，不要只用截图证明「已经连上鸭子」。
 

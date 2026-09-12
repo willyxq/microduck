@@ -103,6 +103,6 @@ export class DuckRpc {
 export const SIM_DUCK = {
   name: "duck-sim",
   serial: "SIM-0001",
-  url: "ws://127.0.0.1:17432",
-  transport: "sim",
+  url: import.meta.env.VITE_MICRODUCK_SIM_URL || "ws://127.0.0.1:17432",
+  transport: import.meta.env.VITE_MICRODUCK_TRANSPORT || "sim",
 };

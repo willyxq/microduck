@@ -3,6 +3,16 @@ import { DuckRpc, SIM_DUCK } from "./rpc.js";
 const root = document.getElementById("app");
 const rpc = new DuckRpc(SIM_DUCK.url);
 
+const COPY = {
+  stop: "立即停止不走 BLE。真急停是物理按钮；松手停靠 teleop 死人手。",
+  sit: "坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。",
+  apply: "模拟环境不下载模型。真鸭子上由它自己的 Wi-Fi 拉签名包。",
+  rollback: "模拟环境不切换已安装版本。真鸭子上回退已安装版本，不经 BLE 传文件。",
+  cameraKicker: "摄像头",
+  cameraTitle: "现在没有直播",
+  cameraSub: "画面要等局域网 / WebRTC。这里不是假视频。",
+};
+
 const state = {
   screen: "discover",
   tab: "home",
@@ -17,6 +27,7 @@ const state = {
   update: null,
   installed: [],
   wifiDraft: null,
+  rollbackDraft: false,
 };
 
 function duckSvg(size = 128) {
@@ -234,15 +245,17 @@ function interactView() {
         <h2>互动</h2>
         <span class="chip">基础控制</span>
       </div>
-      <div class="card">
-        <p class="kicker">摄像头实时画面</p>
+      <div class="card" data-testid="camera-placeholder">
+        <p class="kicker">${COPY.cameraKicker}</p>
+        <p class="title">${COPY.cameraTitle}</p>
+        <p class="sub">${COPY.cameraSub}</p>
         <div class="stage">${duckSvg(88)}</div>
       </div>
-      <button class="danger" data-stop="1">立即停止</button>
+      <button class="danger" data-testid="stop" data-stop="1">立即停止</button>
       <p class="kicker" style="margin:18px 0 8px">基础互动</p>
       <div class="actions">
-        <button class="action" data-act="sit">坐下 / 站起</button>
-        <button class="action" data-act="quack">叫一声</button>
+        <button class="action" data-testid="sit" data-act="sit">坐下 / 站起</button>
+        <button class="action" data-testid="quack" data-act="quack">叫一声</button>
       </div>
       <p class="kicker" style="margin:20px 0 8px">手动驾驶 · 调试能力</p>
       <div class="stick">等待低延迟 teleop 通道<br/>运动控制不经 BLE</div>
@@ -267,8 +280,15 @@ function modelsView() {
           <span class="chip warn">有更新</span>
         </div>
         <p class="sub">v0.11.0 · 模拟环境只报告，不下载制品</p>
-        <button class="cta" data-apply="1" ${state.busy ? "disabled" : ""}>更新</button>
+        <button class="cta" data-testid="apply-update" data-apply="1" ${state.busy ? "disabled" : ""}>更新</button>
+        <button class="ghost wide" data-testid="rollback" data-rollback="1" ${state.busy ? "disabled" : ""}>回到上一版本</button>
       </div>
+      ${state.rollbackDraft ? `<div class="card" data-testid="rollback-confirm-card">
+        <div class="title">确认回退</div>
+        <p class="sub">回退目标：已安装 v${installed}。不会恢复出厂。</p>
+        <button class="cta" data-testid="rollback-confirm" data-rollback-confirm="1" ${state.busy ? "disabled" : ""}>确认回退</button>
+        <button class="ghost wide" data-testid="rollback-cancel" data-rollback-cancel="1">取消</button>
+      </div>` : ""}
       <div class="card">
         <div class="title">升级到第二层还差什么？</div>
         <p class="sub">5 个高级意图 · 成功率 90% · 安全验收。现在不要做意图墙。</p>
@@ -300,7 +320,7 @@ function settingsView() {
       <p class="sub">${state.info?.serial || "SIM-0001"} · ${state.info?.name || "duck-sim"}</p>
       <div class="card">
         <div class="title">连接</div>
-        <p class="sub">传输：模拟 WebSocket · 真机改为 BLE</p>
+        <p class="sub">传输：MICRODUCK_TRANSPORT=${SIM_DUCK.transport} · 真鸭子到了改 ble，页面和调用名不改</p>
         <p class="sub">健康：${state.health?.healthy ? "控制环在跑" : state.health?.reason || "未知"}</p>
       </div>
       <div class="row">
@@ -324,7 +344,7 @@ function render() {
   else body = settingsView();
 
   root.innerHTML = `<div class="phone">${body}${tabbar()}${
-    state.toast ? `<div class="toast">${state.toast}</div>` : ""
+    state.toast ? `<div class="toast" data-testid="toast">${state.toast}</div>` : ""
   }</div>`;
 }
 
@@ -367,19 +387,40 @@ root.addEventListener("click", async (ev) => {
     return;
   }
   if (ev.target.closest("[data-stop]")) {
-    toast("立即停止不走 BLE。真急停是物理按钮；松手停靠 teleop 死人手。");
+    toast(COPY.stop);
     return;
   }
   if (ev.target.closest("[data-act]")) {
-    toast("坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。");
+    toast(COPY.sit);
+    return;
+  }
+  if (ev.target.closest("[data-rollback-cancel]")) {
+    state.rollbackDraft = false;
+    render();
+    return;
+  }
+  if (ev.target.closest("[data-rollback-confirm]")) {
+    state.rollbackDraft = false;
+    await withBusy(async () => {
+      try {
+        await rpc.call("update.rollback", { component: "daemon" });
+      } catch {
+        throw new Error(COPY.rollback);
+      }
+    });
+    return;
+  }
+  if (ev.target.closest("[data-rollback]")) {
+    state.rollbackDraft = true;
+    render();
     return;
   }
   if (ev.target.closest("[data-apply]")) {
     await withBusy(async () => {
       try {
         await rpc.call("update.apply", { component: "daemon" });
-      } catch (e) {
-        throw new Error("模拟环境不下载模型。真鸭子上由它自己的 Wi-Fi 拉签名包。");
+      } catch {
+        throw new Error(COPY.apply);
       }
     });
   }

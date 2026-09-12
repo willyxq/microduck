@@ -39,10 +39,12 @@ final class ConnectSimTests: XCTestCase {
 
         app.buttons["nav-interact"].tap()
         XCTAssertTrue(app.buttons["stop"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["现在没有直播"].exists)
         saveShot("l1-interact")
 
         app.buttons["nav-models"].tap()
         XCTAssertTrue(app.staticTexts["行走 Walk"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["rollback"].exists)
         saveShot("l1-models")
 
         app.buttons["nav-settings"].tap()
@@ -65,6 +67,13 @@ final class ConnectSimTests: XCTestCase {
         XCTAssertTrue(badKey.waitForExistence(timeout: 8), "wrong password must mention BadKey")
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
         saveShot("l1-wifi-badkey")
+
+        app.buttons["wifi-Cafe"].tap()
+        let joined = app.descendants(matching: .any).matching(
+            NSPredicate(format: "label CONTAINS %@", "已加入 Cafe")
+        ).firstMatch
+        XCTAssertTrue(joined.waitForExistence(timeout: 8), "open Cafe must join without a password")
+        saveShot("l1-wifi-cafe")
     }
 
     private func saveShot(_ name: String) {

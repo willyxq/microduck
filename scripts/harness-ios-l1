@@ -17,6 +17,7 @@ UDID=$(xcrun simctl list devices booted -j | python3 -c 'import json,sys; d=json
 print(next(x["udid"] for xs in d.values() for x in xs if x.get("state")=="Booted"))')
 
 mkdir -p "$OUT"
+rm -f "$OUT"/*.png
 
 need_bridge() {
     curl -sfS --max-time 2 "$BRIDGE/health" >/dev/null 2>&1
@@ -96,6 +97,13 @@ tap apply-update
 sleep 0.5
 shot update-refused
 
+tap rollback
+sleep 0.3
+shot rollback-confirm
+tap rollback-confirm
+sleep 0.6
+shot rollback-refused
+
 tap nav-settings
 sleep 0.3
 tap wifi-scan
@@ -109,6 +117,10 @@ type_text wrong-key
 tap wifi-join
 sleep 0.8
 shot wifi-badkey
+
+tap wifi-Cafe
+sleep 1.0
+shot wifi-cafe
 
 echo "shots in $OUT"
 ls -1 "$OUT"

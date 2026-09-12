@@ -38,6 +38,16 @@ struct WifiNetwork: Identifiable {
     var isOpen: Bool { security == "open" }
 }
 
+enum L1Copy {
+    static let stop = "立即停止不走 BLE。真急停是物理按钮；松手停靠 teleop 死人手。"
+    static let sit = "坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。"
+    static let apply = "模拟环境不下载模型。真鸭子上由它自己的 Wi-Fi 拉签名包。"
+    static let rollback = "模拟环境不切换已安装版本。真鸭子上回退已安装版本，不经 BLE 传文件。"
+    static let cameraKicker = "摄像头"
+    static let cameraTitle = "现在没有直播"
+    static let cameraSub = "画面要等局域网 / WebRTC。这里不是假视频。"
+}
+
 enum HarnessTarget {
     static weak var model: AppModel?
 }
@@ -57,6 +67,7 @@ final class AppModel: ObservableObject {
     @Published var installedVersion = "0.10.0"
     @Published var wifiDraftSSID: String?
     @Published var wifiDraftPSK = ""
+    @Published var rollbackDraft = false
 
     let rpc = DuckRpc()
 
@@ -89,16 +100,23 @@ final class AppModel: ObservableObject {
             tab = .settings
             return true
         case "stop":
-            refuseMotion("立即停止不走 BLE。真急停是物理按钮；松手停靠 teleop 死人手。")
+            refuseMotion(L1Copy.stop)
             return true
-        case "sit":
-            refuseMotion("坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。")
-            return true
-        case "quack":
-            refuseMotion("坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。")
+        case "sit", "quack":
+            refuseMotion(L1Copy.sit)
             return true
         case "apply-update":
             Task { await applyUpdate() }
+            return true
+        case "rollback":
+            rollbackDraft = true
+            return true
+        case "rollback-cancel":
+            rollbackDraft = false
+            return true
+        case "rollback-confirm":
+            rollbackDraft = false
+            Task { await rollbackUpdate() }
             return true
         case "wifi-scan":
             Task { await scanWifi() }
@@ -261,7 +279,17 @@ final class AppModel: ObservableObject {
             do {
                 _ = try await rpc.call("update.apply", params: ["component": "daemon"])
             } catch {
-                throw DuckRpcError.remote("模拟环境不下载模型。真鸭子上由它自己的 Wi-Fi 拉签名包。")
+                throw DuckRpcError.remote(L1Copy.apply)
+            }
+        }
+    }
+
+    func rollbackUpdate() async {
+        await withBusy {
+            do {
+                _ = try await rpc.call("update.rollback", params: ["component": "daemon"])
+            } catch {
+                throw DuckRpcError.remote(L1Copy.rollback)
             }
         }
     }

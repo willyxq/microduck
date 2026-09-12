@@ -5,7 +5,7 @@ viewport:
   width: 390
   height: 844
 
-# Click-through: discover → PIN → home → interact toasts → models → wifi BadKey.
+# Click-through: discover → PIN → home → interact toasts → models rollback → wifi BadKey.
 
 steps:
   - perceive:
@@ -50,12 +50,15 @@ steps:
       wait_for_text: "立即停止"
       assert:
         - text_contains: "坐下"
+        - text_contains: "现在没有直播"
+        - text_contains: "WebRTC"
         - text_contains: "运动控制不经 BLE"
+        - element_visible: "[data-testid='camera-placeholder']"
 
   - interact:
       actions:
         - action: click
-          selector: "[data-stop='1']"
+          selector: "[data-testid='stop']"
         - action: wait
           ms: 600
 
@@ -68,7 +71,7 @@ steps:
   - interact:
       actions:
         - action: click
-          selector: "[data-act='sit']"
+          selector: "[data-testid='sit']"
         - action: wait
           ms: 600
 
@@ -84,7 +87,7 @@ steps:
         - action: wait
           ms: 300
         - action: click
-          selector: "[data-apply='1']"
+          selector: "[data-testid='apply-update']"
         - action: wait
           ms: 800
 
@@ -92,6 +95,32 @@ steps:
       wait_for_text: "不下载"
       assert:
         - text_contains: "不下载"
+        - text_contains: "回到上一版本"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='rollback']"
+        - action: wait
+          ms: 400
+
+  - perceive:
+      wait_for_text: "确认回退"
+      assert:
+        - text_contains: "回退目标"
+        - text_contains: "不会恢复出厂"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='rollback-confirm']"
+        - action: wait
+          ms: 800
+
+  - perceive:
+      wait_for_text: "不切换"
+      assert:
+        - text_contains: "不切换已安装版本"
 
   - interact:
       actions:

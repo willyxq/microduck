@@ -64,3 +64,16 @@ steps:
         - text_contains: "密码不对"
         - text_contains: "BadKey"
         - no_console_errors: true
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='wifi-Cafe']"
+        - action: wait
+          ms: 1500
+
+  - perceive:
+      wait_for_text: "已加入 Cafe"
+      assert:
+        - text_contains: "已加入 Cafe"
+        - no_console_errors: true

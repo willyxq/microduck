@@ -285,8 +285,13 @@ struct InteractView: View {
                     Chip(text: "基础控制")
                 }
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("摄像头实时画面")
+                    Text(L1Copy.cameraKicker)
                         .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                    Text(L1Copy.cameraTitle)
+                        .font(.system(size: 16, weight: .bold))
+                    Text(L1Copy.cameraSub)
+                        .font(.system(size: 14))
                         .foregroundStyle(Palette.muted)
                     ZStack {
                         LinearGradient(
@@ -306,8 +311,9 @@ struct InteractView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 }
                 .modifier(Card())
+                .accessibilityIdentifier("camera-placeholder")
                 Button {
-                    model.refuseMotion("立即停止不走 BLE。真急停是物理按钮；松手停靠 teleop 死人手。")
+                    model.refuseMotion(L1Copy.stop)
                 } label: {
                     Text("立即停止")
                         .font(.system(size: 17, weight: .bold))
@@ -348,7 +354,7 @@ struct InteractView: View {
 
     private func action(_ title: String, id: String) -> some View {
         Button {
-            model.refuseMotion("坐下 / 叫一声要局域网控制通道，不能经 BLE 下发。")
+            model.refuseMotion(L1Copy.sit)
         } label: {
             Text(title)
                 .font(.system(size: 15, weight: .semibold))
@@ -402,8 +408,56 @@ struct ModelsView: View {
                     }
                     .disabled(model.busy)
                     .accessibilityIdentifier("apply-update")
+                    Button {
+                        model.rollbackDraft = true
+                    } label: {
+                        Text("回到上一版本")
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .foregroundStyle(Palette.ink)
+                            .background(.white)
+                            .clipShape(Capsule())
+                            .shadow(color: Color.black.opacity(0.06), radius: 8, y: 4)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.busy)
+                    .accessibilityIdentifier("rollback")
                 }
                 .modifier(Card())
+                if model.rollbackDraft {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("确认回退").font(.system(size: 16, weight: .bold))
+                        Text("回退目标：已安装 v\(model.installedVersion)。不会恢复出厂。")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Palette.muted)
+                        Button {
+                            model.rollbackDraft = false
+                            Task { await model.rollbackUpdate() }
+                        } label: {
+                            Text("确认回退")
+                                .font(.system(size: 17, weight: .bold))
+                                .frame(maxWidth: .infinity, minHeight: 52)
+                                .foregroundStyle(Color(red: 0.23, green: 0.16, blue: 0))
+                                .background(Palette.duck)
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(model.busy)
+                        .accessibilityIdentifier("rollback-confirm")
+                        Button {
+                            model.rollbackDraft = false
+                        } label: {
+                            Text("取消")
+                                .font(.system(size: 16, weight: .semibold))
+                                .frame(maxWidth: .infinity, minHeight: 48)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("rollback-cancel")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .modifier(Card())
+                    .accessibilityIdentifier("rollback-confirm-card")
+                }
                 VStack(alignment: .leading, spacing: 8) {
                     Text("升级到第二层还差什么？").font(.system(size: 16, weight: .bold))
                     Text("5 个高级意图 · 成功率 90% · 安全验收。现在不要做意图墙。")
@@ -437,7 +491,7 @@ struct SettingsView: View {
                     .foregroundStyle(Palette.muted)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("连接").font(.system(size: 16, weight: .bold))
-                    Text("传输：模拟 WebSocket · 真机改为 BLE")
+                    Text("传输：MICRODUCK_TRANSPORT=\(DuckRpc.transport) · 真鸭子到了改 ble，页面和调用名不改")
                         .font(.system(size: 14))
                         .foregroundStyle(Palette.muted)
                     Text(model.healthOK ? "健康：控制环在跑" : "健康：\(model.healthTitle)")
