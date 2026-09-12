@@ -1,0 +1,132 @@
+#!/bin/sh
+# Protocol twin for the phone app. Same JSON-RPC as btd, over WebSocket.
+#
+#   scripts/duck-app-sim up
+#   scripts/duck-app-sim status
+#   scripts/duck-app-sim down
+#
+# See docs/app-demo/SIM-DUCK.md. Not MuJoCo, not BLE.
+
+set -eu
+
+STATE="${DUCK_APP_SIM_STATE:-$HOME/.cache/duck-app-sim}"
+LISTEN="${DUCK_APP_SIM_LISTEN:-127.0.0.1:17432}"
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+SOCK="$STATE/run"
+CFG="$STATE/config"
+PIN="000000"
+NAME="duck-sim"
+SERIAL="SIM-0001"
+
+say() { printf '\033[36m==\033[0m %s\n' "$*"; }
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+
+stop_one() {
+    [ -f "$STATE/$1.pid" ] || return 0
+    pid="$(cat "$STATE/$1.pid")"
+    kill -TERM "$pid" 2>/dev/null || true
+    i=0
+    while [ $i -lt 25 ] && kill -0 "$pid" 2>/dev/null; do i=$((i + 1)); sleep 0.2; done
+    kill -KILL "$pid" 2>/dev/null || true
+    rm -f "$STATE/$1.pid"
+}
+
+start_one() {
+    name="$1"
+    shift
+    nohup "$@" >"$STATE/$name.log" 2>&1 &
+    echo $! > "$STATE/$name.pid"
+}
+
+down() {
+    stop_one sim-btd
+    stop_one robotd
+    stop_one configd
+    rm -f "$SOCK"/*.sock
+    say "down"
+}
+
+status() {
+    printf 'listen\t%s\n' "$LISTEN"
+    printf 'name\t%s\n' "$NAME"
+    printf 'serial\t%s\n' "$SERIAL"
+    printf 'pin\t%s\n' "$PIN"
+    printf 'wifi\tPollen (WPA, password correct-key) · Cafe (open)\n'
+    for name in configd robotd sim-btd; do
+        if [ -f "$STATE/$name.pid" ] && kill -0 "$(cat "$STATE/$name.pid")" 2>/dev/null; then
+            printf '%s\tup\tpid %s\n' "$name" "$(cat "$STATE/$name.pid")"
+        else
+            printf '%s\tdown\n' "$name"
+        fi
+    done
+}
+
+need_bins() {
+    missing=
+    for bin in configd robotd sim-btd; do
+        [ -x "$REPO/target/debug/$bin" ] || missing="$missing $bin"
+    done
+    if [ -n "$missing" ]; then
+        say "building configd robotd sim-btd"
+        (cd "$REPO" && cargo build -p configd -p robotd -p sim-btd)
+    fi
+}
+
+up() {
+    down
+    mkdir -p "$SOCK" "$CFG"
+    printf '{"name":"%s"}\n' "$NAME" > "$CFG/config.json"
+
+    need_bins
+
+    say "starting configd --fake-net --serial $SERIAL"
+    start_one configd "$REPO/target/debug/configd" \
+        --socket "$SOCK/configd.sock" \
+        --state-dir "$CFG" \
+        --serial "$SERIAL" \
+        --fake-net --fake-pads
+
+    say "starting robotd --fake --no-policy"
+    start_one robotd "$REPO/target/debug/robotd" \
+        --socket "$SOCK/robotd.sock" \
+        --fake --no-policy
+
+    # Sockets must exist before sim-btd accepts a phone.
+    i=0
+    while [ $i -lt 50 ]; do
+        [ -S "$SOCK/configd.sock" ] && [ -S "$SOCK/robotd.sock" ] && break
+        i=$((i + 1))
+        sleep 0.1
+    done
+    [ -S "$SOCK/configd.sock" ] || die "configd did not create $SOCK/configd.sock — see $STATE/configd.log"
+    [ -S "$SOCK/robotd.sock" ] || die "robotd did not create $SOCK/robotd.sock — see $STATE/robotd.log"
+
+    say "starting sim-btd on $LISTEN"
+    start_one sim-btd "$REPO/target/debug/sim-btd" \
+        --listen "$LISTEN" \
+        --config-socket "$SOCK/configd.sock" \
+        --robot-socket "$SOCK/robotd.sock" \
+        --update-socket "$SOCK/updaterd.sock" \
+        --stub-updater
+
+    sleep 0.3
+    status
+    say "App: MICRODUCK_TRANSPORT=sim  ws://$LISTEN"
+    say "probe: scripts/duck-app-sim probe"
+}
+
+probe() {
+    host="${LISTEN%:*}"
+    port="${LISTEN#*:}"
+    MICRODUCK_SIM_URL="ws://${host}:${port}" MICRODUCK_PIN="$PIN" \
+        node "$REPO/scripts/probe-app-sim.mjs"
+}
+
+cmd="${1:-up}"
+case "$cmd" in
+    up) up ;;
+    down) down ;;
+    status) status ;;
+    probe) probe ;;
+    *) die "usage: $0 up|down|status|probe" ;;
+esac

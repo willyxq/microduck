@@ -1,0 +1,21 @@
+[package]
+name = "sim-btd"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "WebSocket front door onto the robot API — the App-sim transport"
+
+# Laptop / harness only. Not a robot unit, not in default-members, never cross-compiled
+# for the board. Same session and routing table as `btd`; the radio is a WebSocket.
+
+[dependencies]
+btd = { path = "../btd" }
+duck-ipc-proto = { path = "../duck-ipc-proto" }
+serde_json.workspace = true
+semver.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "io-util", "time", "sync", "signal"] }
+tokio-tungstenite = "0.26"
+futures-util = { version = "0.3", features = ["sink"] }
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }

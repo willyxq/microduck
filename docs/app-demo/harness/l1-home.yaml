@@ -1,24 +1,36 @@
 name: "L1: field-admin home"
 url: http://127.0.0.1:5173
-timeout: 30000
+timeout: 60000
 viewport:
   width: 390
   height: 844
 
-# Assumes already authenticated to duck-sim.
+# Each scenario starts a fresh page. Authenticate first.
 
 steps:
   - perceive:
       wait_for_text: "duck-sim"
-      assert:
-        - text_contains: "duck-sim"
-        - min_interactive_elements: 4
-        - no_console_errors: true
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='duck-sim']"
+        - action: wait
+          ms: 300
+        - action: type
+          selector: "[data-testid='pin-input']"
+          text: "000000"
+        - action: click
+          selector: "[data-testid='pin-submit']"
 
   - perceive:
+      wait_for_text: "现场连接"
       assert:
+        - text_contains: "duck-sim"
         - text_contains: "首页"
         - text_contains: "互动"
         - text_contains: "模型"
         - text_contains: "设置"
         - text_not_contains: "控制"
+        - min_interactive_elements: 4
+        - no_console_errors: true

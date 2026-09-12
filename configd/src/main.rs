@@ -62,6 +62,14 @@ struct Args {
     #[arg(long)]
     fake_net: bool,
 
+    /// Pin the SoC serial instead of reading `/proc/device-tree/serial-number`.
+    ///
+    /// Laptop / App-sim use. A Mac has no device-tree serial, and without this
+    /// `system.info` reports `null` — which is honest on a board, but a simulated
+    /// duck needs a stable handle the app can key on (`SIM-DUCK.md`).
+    #[arg(long)]
+    serial: Option<String>,
+
     /// Serve an in-memory set of gamepads instead of BlueZ.
     ///
     /// The whole `pad.*` surface, including the cases that need hardware to arrange — two pads in
@@ -210,7 +218,7 @@ async fn main() -> ExitCode {
 
     // The identity, and the name that hangs off it. A board with no readable serial keeps the old
     // behaviour — the hostname — rather than losing its name over a missing devicetree property.
-    let serial = configd::identity::serial();
+    let serial = args.serial.or_else(configd::identity::serial);
     let default_name = match &serial {
         Some(serial) => configd::identity::default_name(serial),
         None => {

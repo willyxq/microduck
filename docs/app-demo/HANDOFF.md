@@ -29,7 +29,7 @@ git switch --detach app-checkpoint-2026-09-12
 
 ## 2. 现在完成了什么
 
-只完成了**产品设计和可下载视觉稿**，没有 App 工程、没有 iOS/Android 工程、没有真机 BLE 联调。
+设计冻结点只完成了**产品设计和可下载视觉稿**。Mac 续做已经补上 App-sim 和 L1 web 面，仍然没有 iOS/Android 工程、没有真机 BLE 联调。
 
 已冻结：
 
@@ -84,7 +84,8 @@ Mac 最小工具：
 
 - Xcode；真机 iPhone 用于以后的 BLE，不是现在的阻塞项
 - Rust、Node；harness 在 `~/Workspace/harness/harness`
-- App-sim（待实现），代替还没到的真鸭子
+- App-sim（`scripts/duck-app-sim` + `sim-btd`），代替还没到的真鸭子
+- L1 web 面：`apps/microduck-app`，浏览器打开 `http://127.0.0.1:5173`
 - 本仓库作为 git 依赖，用来引用 `duck-ipc-proto`
 
 不要在 Ubuntu 上继续写 iOS 工程，也不要重做信息架构。

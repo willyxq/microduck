@@ -20,3 +20,7 @@ secret*
 
 # Playground and scratch state (see updater/examples/playground.rs).
 /verify
+
+# App-sim web client
+/apps/microduck-app/node_modules
+/apps/microduck-app/dist

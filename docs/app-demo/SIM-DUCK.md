@@ -1,6 +1,6 @@
 # 虚拟鸭子，以及怎么切到真鸭子
 
-状态：待实现 · 日期：2026-09-12
+状态：已实现（层 A · App-sim） · 日期：2026-09-12
 
 配套 [`DEV-ENVIRONMENT.md`](DEV-ENVIRONMENT.md)。产品目标仍是第一层现场管理员。
 
@@ -85,9 +85,9 @@ Body-sim 在 Mac 上比 Ubuntu 重：上游按 Linux 容器 / `systemd-nspawn` �
 | 字段 | 开发默认 |
 |---|---|
 | 名字 | `duck-sim` |
-| 序列号 | `SIM-0001` |
+| 序列号 | `SIM-0001`（`configd --serial`） |
 | PIN | `000000` |
-| 假 SSID | `SimCafe`、`SimOffice`（`SimCafe` 的密码约定为 `correct`） |
+| 假 SSID | FakeNet 原样：`Pollen`（密码 `correct-key`）、`Cafe`（开放） |
 | 无地址时的广告含义 | 等价 `0.0.0.0`：鸭子在、但没网 |
 
 ### 3.3 App 侧
@@ -101,12 +101,12 @@ Body-sim 在 Mac 上比 Ubuntu 重：上游按 Linux 容器 / `systemd-nspawn` �
 鸭子还没到，每天只走这一路：
 
 ```bash
-# 1. 协议孪生
+# 1. 协议孪生（tmux 里跑，避免被当前 shell 带走）
 scripts/duck-app-sim up
+scripts/duck-app-sim probe
 
-# 2. App（开发构建默认 sim）
-cd apps/microduck-app && npm run tauri dev
-# 或：MICRODUCK_TRANSPORT=sim npm run dev
+# 2. L1 web 面（开发构建默认 sim；还不是商店包）
+cd apps/microduck-app && npm run dev
 
 # 3. 自动看页面
 cd ~/Workspace/harness/harness
@@ -117,7 +117,8 @@ npx tsx src/cli.ts scenario \
 探针（没 UI 也能跑，对应原 HANDOFF 的下一枪）：
 
 ```
-connect sim → hello → authenticate 000000 → system.info
+scripts/duck-app-sim probe
+# connect sim → hello → authenticate 000000 → system.info
 ```
 
 `system.info` 必须带回 `SIM-0001` / `duck-sim`。这是「连上了虚拟鸭子」的最低证据。

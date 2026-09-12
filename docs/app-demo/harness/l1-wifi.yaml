@@ -1,19 +1,32 @@
-name: "L1: provision SimCafe over the protocol twin"
+name: "L1: provision FakeNet over the protocol twin"
 url: http://127.0.0.1:5173
 timeout: 60000
 viewport:
   width: 390
   height: 844
 
-# FakeNet contract: SimCafe + password "correct" joins;
+# FakeNet contract: Pollen + password "correct-key" joins;
 # any other password is BadKey. App must say it is the password,
-# not a generic failure.
+# not a generic failure. Cafe is open.
 
 steps:
   - perceive:
-      wait_for_text: "设置"
-      assert:
-        - text_contains: "设置"
+      wait_for_text: "duck-sim"
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='duck-sim']"
+        - action: wait
+          ms: 300
+        - action: type
+          selector: "[data-testid='pin-input']"
+          text: "000000"
+        - action: click
+          selector: "[data-testid='pin-submit']"
+
+  - perceive:
+      wait_for_text: "现场连接"
 
   - interact:
       actions:
@@ -22,13 +35,32 @@ steps:
         - action: wait
           ms: 400
         - action: click
-          selector: "[data-testid='wifi']"
+          selector: "[data-testid='wifi-scan']"
         - action: wait
-          ms: 800
+          ms: 1500
 
   - perceive:
-      wait_for_text: "SimCafe"
+      wait_for_text: "Pollen"
       assert:
-        - text_contains: "SimCafe"
-        - text_contains: "SimOffice"
+        - text_contains: "Pollen"
+        - text_contains: "Cafe"
+        - no_console_errors: true
+
+  - interact:
+      actions:
+        - action: click
+          selector: "[data-testid='wifi-Pollen']"
+        - action: wait
+          ms: 300
+        - action: type
+          selector: "[data-testid='wifi-password']"
+          text: "wrong-key"
+        - action: click
+          selector: "[data-testid='wifi-join']"
+
+  - perceive:
+      wait_for_text: "密码不对"
+      assert:
+        - text_contains: "密码不对"
+        - text_contains: "BadKey"
         - no_console_errors: true

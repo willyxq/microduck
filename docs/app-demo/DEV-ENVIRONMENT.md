@@ -62,8 +62,8 @@ HANDOFF 表里曾写提交 `1738ba5`。那是三层演进归档；标签在其�
 | 真鸭子 | 没有，系统蓝牙列表里看不到 `duck-*` |
 | iPhone **mickey**（iOS 26.5） | Xcode 里 Offline |
 | `duckctl` | 源码在，本机还没编过 |
-| App 工程 | 不存在 |
-| App-sim | 不存在，要建，见 [`SIM-DUCK.md`](SIM-DUCK.md) |
+| App 工程 | L1 web 面在 `apps/microduck-app`（Vite，`127.0.0.1:5173`）。还不是 Tauri / TestFlight 包 |
+| App-sim | 已落地：`scripts/duck-app-sim` + `sim-btd`，见 [`SIM-DUCK.md`](SIM-DUCK.md) |
 
 结论：Mac 够写 App 和跑 harness。不够做「真机 BLE 探针」。在鸭子到货前，探针改打 App-sim：同一组调用 `hello` / `authenticate` / `system.info`。
 
@@ -174,9 +174,11 @@ docs/app-demo/
   DEV-ENVIRONMENT.md      # 本文
   SIM-DUCK.md             # 虚拟鸭子和切换
   harness/                # L1 验收场景
+  captures/               # harness 真实截图（不是画廊稿）
   v0/                     # 旧控制台存档
-apps/microduck-app/       # 下一步才建
-scripts/duck-app-sim      # 下一步才建：一键拉起协议孪生
+apps/microduck-app/       # L1 web 面。harness 先打这里
+scripts/duck-app-sim      # 一键拉起协议孪生
+sim-btd/                  # WebSocket 网关，复用 btd session / route
 ```
 
 `apps/` 最终可以独立成库。在独立之前，本仓库用 git 依赖引用 `duck-ipc-proto`。

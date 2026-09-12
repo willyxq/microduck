@@ -21,7 +21,7 @@ steps:
         - action: click
           selector: "[data-testid='duck-sim']"
         - action: wait
-          ms: 500
+          ms: 400
 
   - perceive:
       wait_for_text: "PIN"
@@ -35,12 +35,12 @@ steps:
           text: "000000"
         - action: click
           selector: "[data-testid='pin-submit']"
-        - action: wait
-          ms: 1000
 
   - perceive:
-      wait_for_text: "duck-sim"
+      wait_for_text: "现场连接"
       assert:
         - text_contains: "duck-sim"
+        - text_contains: "现场连接"
+        - text_contains: "首页"
         - text_not_contains: "手柄"
         - no_console_errors: true
